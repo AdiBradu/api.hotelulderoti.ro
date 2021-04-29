@@ -15,12 +15,13 @@ dotenv.config();
 
 app.use(express.json());
 
-var corsOptions = {
+/*var corsOptions = {
   origin: process.env.CLIENT_FOR_THE_API,
   optionsSuccessStatus: 200, 
   credentials: true
 }
-app.use(cors(corsOptions));
+app.use(cors(corsOptions));*/
+app.use(cors());
 
 app.set('etag', false);
 
