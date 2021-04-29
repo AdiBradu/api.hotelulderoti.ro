@@ -15,14 +15,12 @@ dotenv.config();
 
 app.use(express.json());
 
-/*var corsOptions = {
+var corsOptions = {
   origin: process.env.CLIENT_FOR_THE_API,
   optionsSuccessStatus: 200, 
   credentials: true
 }
-app.use(cors(corsOptions));*/
-app.use(cors());
-app.options('*',cors());
+app.use(cors(corsOptions));
 
 app.set('etag', false);
 
@@ -66,11 +64,6 @@ const port = Number(process.env.PORT || 3331);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/fleets', fleetRouter);
-
-//testing purposes
-app.get('/test', (req, res) => {
-  res.send('online');
-})
 
 //404 error
 app.all('*', (req, res, next) => {

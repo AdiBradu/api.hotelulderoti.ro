@@ -1,9 +1,9 @@
 const query = require('../db/db-connection');
 const DBUserModel = require('../models/user.model');
 const UserModel = new DBUserModel(query);
-const DBFleetInfoModel = require('../models/fleetinfo.model');
+const DBFleetInfoModel = require('../models/fleetInfo.model');
 const FleetInfoModel = new DBFleetInfoModel(query);
-const DBPartnerInfoModel = require('../models/partnerinfo.model');
+const DBPartnerInfoModel = require('../models/partnerInfo.model');
 const PartnerInfoModel = new DBPartnerInfoModel(query);
 const DBSalesAgentFleetAssignmentModel = require('../models/salesAgentFleetAssignment.model');
 const SalesAgentFleetAssignmentModel = new DBSalesAgentFleetAssignmentModel(query);

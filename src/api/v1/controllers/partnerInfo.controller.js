@@ -1,5 +1,5 @@
 const query = require('../db/db-connection');
-const DBPartnerInfoModel = require('../models/partnerinfo.model');
+const DBPartnerInfoModel = require('../models/partnerInfo.model');
 const PartnerInfoModel = new DBPartnerInfoModel(query);
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
