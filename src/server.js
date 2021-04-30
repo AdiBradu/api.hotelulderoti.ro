@@ -65,6 +65,7 @@ const sessionStore = new MySQLStore({
 	endConnectionOnClose: true,
 	charset: 'utf8mb4_bin'});
 
+app.set('trust proxy', 1); 
 app.use(session({
 	key: 'th_session',
 	secret: process.env.SESS_SECRET,
@@ -72,8 +73,10 @@ app.use(session({
 	resave: false,
 	saveUninitialized: false,
 	unset: 'destroy',
+  proxy: process.env.NODE_ENV === 'PRODUCTION',
+  
 	cookie: { 
-    domain: process.env.NODE_ENV === 'PRODUCTION' ? '.hotelulderoti.ro': process.env.SESS_COOKIE_DOMAIN,
+    domain: process.env.NODE_ENV === 'PRODUCTION' ? 'hotelulderoti.ro': process.env.SESS_COOKIE_DOMAIN,
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'PRODUCTION',
