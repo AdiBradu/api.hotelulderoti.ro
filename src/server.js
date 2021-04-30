@@ -48,6 +48,7 @@ app.use(session({
 	saveUninitialized: false,
 	unset: 'destroy',
 	cookie: { 
+    domain: process.env.NODE_ENV === 'PRODUCTION' ? '.hotelulderoti.ro' : process.env.SESS_COOKIE_DOMAIN,
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'PRODUCTION',
@@ -65,9 +66,6 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/fleets', fleetRouter);
 
-app.get("/test", (req, res) => {
-  res.send('server online');
-});
 
 //404 error
 app.all('*', (req, res, next) => {
