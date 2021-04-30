@@ -12,7 +12,32 @@ const fleetRouter = require('./api/v1/routes/fleetInfo.routes');
 const app = express();
 
 dotenv.config();
+function logResponseBody(req, res, next) {
+  var oldWrite = res.write,
+      oldEnd = res.end;
 
+  var chunks = [];
+
+  res.write = function (chunk) {
+    chunks.push(chunk);
+
+    return oldWrite.apply(res, arguments);
+  };
+
+  res.end = function (chunk) {
+    if (chunk)
+      chunks.push(chunk);
+
+    var body = Buffer.concat(chunks).toString('utf8');
+    console.log(res.getHeaders(), body);
+
+    oldEnd.apply(res, arguments);
+  };
+
+  next();
+}
+
+app.use(logResponseBody);
 app.use(express.json());
 
 var corsOptions = {
@@ -48,7 +73,7 @@ app.use(session({
 	saveUninitialized: false,
 	unset: 'destroy',
 	cookie: { 
-    domain: process.env.NODE_ENV === 'PRODUCTION' ? '.hotelulderoti.ro' : process.env.SESS_COOKIE_DOMAIN,
+    domain: process.env.NODE_ENV === 'PRODUCTION' ? '.hotelulderoti.ro': process.env.SESS_COOKIE_DOMAIN,
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'PRODUCTION',
@@ -75,6 +100,8 @@ app.all('*', (req, res, next) => {
 
 //error middleware
 app.use(errorMiddleware);
+
+
 
 //starting the server
 app.listen(port, () => 
