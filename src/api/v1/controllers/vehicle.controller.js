@@ -67,6 +67,20 @@ class VehicleController {
     res.send(vehiclesList);    
   }
 
+  getVehiclesWithTires = async (req, res, next) => {
+    let searchParams = [];
+    let customSearchString=``;
+    if(!req.query.vId) {
+      throw new HttpException(401, 'Acces interzis');
+    } else {
+      let hasAccess = await VehicleModel.checkVehicleWriteAccess(req.query.vId, req.session.userId, req.session.userRole);
+      if(!hasAccess) {
+        throw new HttpException(401, 'Acces interzis');  
+      }
+      let vehicleWithTires = await VehicleModel.getVehicleWithTires(req.query.vId);
+      res.send(vehicleWithTires); 
+    }
+  }
 
   getVehicleTireAttributes = async (req, res, next) => {
     
@@ -82,6 +96,26 @@ class VehicleController {
     res.send(tireAttributes);     
   }
   
+  updateVehicle = async (req, res, next) => {
+    let hasAccess = await VehicleModel.checkVehicleWriteAccess(req.params.id, req.session.userId, req.session.userRole);  
+    if(!hasAccess) {
+      throw new HttpException(401, 'Acces interzis');  
+    }
+
+    const result = await VehicleModel.updateWithTires(req.body, req.params.id);
+
+    if(!result) {
+      throw new HttpException(500, 'Something went wrong');
+    }
+
+    const { affectedRows, changedRows, info } = result;
+
+    const message = !affectedRows ? 'Vehicle not found' : 
+      affectedRows && changedRows ? 'Vehicle successfully updated' : 'Update failed';
+
+    res.send({message, info});
+  }
+
   createVehicle = async (req, res, next) => {
     /* this.checkValidation(req); */
     if(req.session.userRole === 3) {
@@ -152,7 +186,14 @@ class VehicleController {
   }
 
   deleteVehicle = async (req, res, next) => {
-    const result = await VehicleModel.delete(req.params.id);
+    let result;
+    if(req.session.userRole === 1) {
+      result = await VehicleModel.delete(req.params.id);
+    } else if(req.session.userRole === 2) {
+      result = await VehicleModel.agentDelete(req.params.id, req.session.userId);
+    } else if(req.session.userRole === 3) {
+      result = await VehicleModel.fleetUserDelete(req.params.id, req.session.userId);
+    }
     if(!result) {
       throw new HttpException(404, 'Vehiculul nu a fost gasit');
     }

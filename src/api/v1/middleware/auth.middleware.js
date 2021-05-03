@@ -8,17 +8,17 @@ const auth = (...roles) => {
     try {
     
       if(!req.session || !req.session.userId || !req.session.userRole) {
-        throw new HttpException(401, 'Access denied.');
+        throw new HttpException(401, 'Access interzis.');
       }
   
       const user = await UserModel.findOne({ u_id: req.session.userId });
     
       if(!user) {
-        throw new HttpException(401, 'Access denied.');
+        throw new HttpException(401, 'Access interzis.');
       }
 
       if(roles.length && !roles.includes(user.user_type)) {
-        throw new HttpException(401, 'Access denied');
+        throw new HttpException(401, 'Access interzis');
       }
 
       req.currentUser = user;
