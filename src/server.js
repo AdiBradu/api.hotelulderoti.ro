@@ -8,11 +8,11 @@ const errorMiddleware = require('./api/v1/middleware/error.middleware');
 const userRouter = require('./api/v1/routes/user.routes');
 const authRouter = require('./api/v1/routes/auth.routes');
 const fleetRouter = require('./api/v1/routes/fleetInfo.routes');
-
+const vehicleRouter = require('./api/v1/routes/vehicle.routes');
 const app = express();
 
 dotenv.config();
-function logResponseBody(req, res, next) {
+/* function logResponseBody(req, res, next) {
   var oldWrite = res.write,
       oldEnd = res.end;
 
@@ -37,7 +37,7 @@ function logResponseBody(req, res, next) {
   next();
 }
 
-app.use(logResponseBody);
+app.use(logResponseBody); */
 app.use(express.json());
 
 var corsOptions = {
@@ -74,9 +74,8 @@ app.use(session({
 	saveUninitialized: false,
 	unset: 'destroy',
   proxy: process.env.NODE_ENV === 'PRODUCTION',
-  
 	cookie: { 
-    domain: process.env.NODE_ENV === 'PRODUCTION' ? 'hotelulderoti.ro': process.env.SESS_COOKIE_DOMAIN,
+    domain: process.env.NODE_ENV === 'PRODUCTION' ? '.hotelulderoti.ro': process.env.SESS_COOKIE_DOMAIN,
 		path: '/',
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'PRODUCTION',
@@ -93,7 +92,7 @@ const port = Number(process.env.PORT || 3331);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/fleets', fleetRouter);
-
+app.use('/api/v1/vehicles', vehicleRouter);
 
 //404 error
 app.all('*', (req, res, next) => {

@@ -13,20 +13,44 @@ dotenv.config();
 class FleetInfoController {
 
   getAllFleets = async (req, res, next) => {
-    let fleetList = await FleetInfoModel.find();
-    if(!fleetList.length) {
-      throw new HttpException(404, 'Nici o flota gasita');
-    }
+    let searchParams = [];
+    let customSearchString=``;
+    searchParams.push(1);  
+    customSearchString += ' 1 = ?';
 
-    res.send(fleetList);
+    if(req.session.userRole === 1) {      
+      let fleetList = await FleetInfoModel.getAllFleets();
+      if(!fleetList.length) {
+        throw new HttpException(404, 'Nici o flota gasita');
+      }
+      res.send(fleetList);
+    } else if(req.session.userRole === 2) {
+      let fleetList = await FleetInfoModel.getAgentFleets(req.session.userId);
+      if(!fleetList.length) {
+        throw new HttpException(404, 'Nici o flota gasita');
+      }
+      res.send(fleetList);
+    }
+    
   }
 
   getFleetById = async (req, res, next) => {
-    const fleet = await FleetInfoModel.findOne({fi_id: req.params.id});
-    if(!fleet) {
-      throw new HttpException(404, 'Flota nu a fost gasita');
+    let fleet
+    if(req.session.userRole === 1) {
+      let searchParams = [req.params.id];
+      fleet = await FleetInfoModel.search(`fi_id = ? `, searchParams);
+    } else if(req.session.userRole === 2) {
+      let searchParams = [req.session.userId, req.params.id];
+      fleet = await FleetInfoModel.agentSearch(` AND fleet_info.fi_id = ? `, searchParams);
+      
+    } else if(req.session.userRole === 3) {
+      let searchParams = [req.params.id, req.session.userId];      
+      fleet = await FleetInfoModel.search(`fi_id = ? AND user_id = ?`, searchParams);
     }
 
+    if(!fleet || !fleet.length) {
+      throw new HttpException(401, 'Acces interzis');
+    }
     res.send(fleet);
   }
 
@@ -65,11 +89,7 @@ class FleetInfoController {
       searchParams = [...searchParams, String(req.query.region)];
       customSearchString += ` fleet_region = ? `;
     }
-    /* if(String(req.query.healthScore) !== "") {
-      searchParams = [...searchParams, String(req.query.healthScore)];
-      if(searchParams.length > 0) customSearchString += ` AND `;
-      customSearchString += ` health_score = ? `;
-    } */
+    
     if(searchParams.length < 1) {
       searchParams.push(1);  
       customSearchString += ' 1 = ?';
@@ -81,15 +101,23 @@ class FleetInfoController {
   }
 
 
-  filterFleetVehicles = async (req, res, next) => {
+  getFleetVehicles = async (req, res, next) => {
     let searchParams = [];
     let customSearchString=``;
     if(!req.query.fleet_id) {
       res.send([]);
     } else {
-      let fleetVehicleList = await VehicleModel.find({fleet_id: req.query.fleet_id, vehicle_type: String(req.query.vehicleType)});
+      let fleetVehicleList = await VehicleModel.find({fleet_id: req.query.fleet_id});
       res.send(fleetVehicleList); 
     }
+  }
+
+
+  getFleetFiltersValues = async (req, res, next) => {
+    let fleetsRegions = await FleetInfoModel.getDistinctFleetsRegions();
+    
+    let fleetsFiltersValues = [{fleetsRegions: fleetsRegions}];
+    res.send(fleetsFiltersValues);      
   }
 
   deleteFleetInfo = async (req, res, next) => {

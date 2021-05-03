@@ -9,13 +9,16 @@ class DBVehicleModel {
   }
 
   find = async (params = {}) => {
-    let sql = `SELECT * FROM ${this.tableName}`;
+    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName}`;
 
     if(!Object.keys(params).length) {
       return await this._query(sql);
     }
 
-    const { columnSet, values } = multipleColumnSet(params);
+    const keys = Object.keys(params);
+    const values = Object.values(params);
+    const columnSet = keys.map(key => `${key} = ?`).join(' AND '); 
+    
     sql += ` WHERE ${columnSet}`;
 
     return await this._query(sql, [...values]);

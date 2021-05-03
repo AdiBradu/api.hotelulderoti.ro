@@ -17,7 +17,10 @@ const DBTireHeightModel = require('../models/tireHeight.model');
 const TireHeightModel = new DBTireHeightModel(query);
 const DBTireBrandModel = require('../models/tireBrand.model');
 const TireBrandModel = new DBTireBrandModel(query);
-
+const DBSalesAgentFleetAssignmentModel = require('../models/salesAgentFleetAssignment.model');
+const SalesAgentFleetAssignmentModel = new DBSalesAgentFleetAssignmentModel(query);
+const DBTireModel = require('../models/tire.model');
+const TireModel = new DBTireModel(query);
 
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
@@ -66,14 +69,86 @@ class VehicleController {
 
 
   getVehicleTireAttributes = async (req, res, next) => {
+    
+    let heightsList = await TireHeightModel.find();
     let widthsList = await TireWidthModel.find();
     let speedIndexesList = await TireSpeedIndexModel.find();
     let rimsList = await TireRimModel.find();
     let positionsList = await TirePositionModel.find();
     let loadIndexesList = await TireLoadIndexModel.find();
+    let brandsList = await TireBrandModel.find();
 
-    const tireAttributes = {widthsList, speedIndexesList, rimsList, positionsList, loadIndexesList};
+    const tireAttributes = {heightsList, widthsList, speedIndexesList, rimsList, positionsList, loadIndexesList, brandsList};
     res.send(tireAttributes);     
+  }
+  
+  createVehicle = async (req, res, next) => {
+    /* this.checkValidation(req); */
+    if(req.session.userRole === 3) {
+      const fleetUserAccessCheck = await FleetInfoModel.find({fi_id: parseInt(req.body.fleetId), user_id: req.session.userId})
+      if(!fleetUserAccessCheck || fleetUserAccessCheck.length < 1) {
+        throw new HttpException(401, 'Acces interzis');  
+      }
+    }
+
+    if(req.session.userRole === 2) {
+      const agentAccessCheck = await SalesAgentFleetAssignmentModel.find({fleet_id: parseInt(req.body.fleetId), sales_agent_id: req.session.userId, active: 1})
+      if(!agentAccessCheck || agentAccessCheck.length < 1) {
+        throw new HttpException(401, 'Acces interzis');  
+      }
+    }
+    
+    const checkVehicleDuplicate = await VehicleModel.find({fleet_id: req.body.fleetId, reg_number: req.body.regNumber, vehicle_brand: req.body.vechicleBrand, vehicle_model: req.body.vechicleModel, vehicle_type: req.body.vehicleType, in_use: 1});
+    if(checkVehicleDuplicate && checkVehicleDuplicate.length > 0) {
+      throw new HttpException(402, 'Vehicul duplicat');  
+    }
+
+    const vehicleData = {
+      fleet_id : req.body.fleetId,
+      vehicle_tire_count: req.body.vehicle_tire_count,
+      reg_number: req.body.regNumber,
+      vehicle_brand: req.body.vechicleBrand,
+      vehicle_model: req.body.vechicleModel,
+      vehicle_type: req.body.vehicleType,
+      vehicle_milage: req.body.vechicleMilage,
+      in_use: 1,      
+      created: Date.now(),
+      updated: Date.now()
+    }
+    const newVehicleId = await VehicleModel.create(vehicleData);
+
+    if(!newVehicleId) {
+      throw new HttpException(500, 'Something went wrong');
+    }
+
+    let vehicleTires = []
+    for(let i=0; i<req.body.vehicle_tire_count; i++) {
+      let tireToIns = {
+        vehicle_id: newVehicleId,
+        fleet_id:  parseInt(req.body.fleetId),
+        tire_position: parseInt(i+1),
+        tire_width: parseInt(req.body.vehicleTires.widths[i]),
+        tire_height: parseInt(req.body.vehicleTires.heights[i]),
+        tire_diameter: parseInt(req.body.vehicleTires.diameters[i]),
+        tire_speed_index: parseInt(req.body.vehicleTires.speedIndexes[i]),
+        tire_load_index: parseInt(req.body.vehicleTires.loadIndexes[i]),
+        tire_brand: parseInt(req.body.vehicleTires.brands[i]),
+        tire_model: req.body.vehicleTires.models[i],
+        tire_season: req.body.vehicleTires.seasons[i],
+        tire_dot: req.body.vehicleTires.dots[i],
+        tire_rim: parseInt(req.body.vehicleTires.rims[i]),
+        tire_tread_wear: parseFloat(req.body.vehicleTires.treadUsages[i]),
+        created: Date.now(),
+        updated: Date.now()
+      }    
+      let newTireResult = await TireModel.create(tireToIns);
+      if(!newTireResult) {
+        throw new HttpException(500, 'Something went wrong');
+      }
+    }
+
+    
+    res.status(201).send('Vehicul adaugat cu succes!');
   }
 
   deleteVehicle = async (req, res, next) => {

@@ -15,7 +15,11 @@ class DBSalesAgentFleetAssignmentModel {
       return await this._query(sql);
     }
 
-    const { columnSet, values } = multipleColumnSet(params);
+    
+    const keys = Object.keys(params);
+    const values = Object.values(params);
+    const columnSet = keys.map(key => `${key} = ?`).join(' AND ');  
+    
     sql += ` WHERE ${columnSet}`;
 
     return await this._query(sql, [...values]);
