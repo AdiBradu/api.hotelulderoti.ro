@@ -8,6 +8,7 @@ const awaitHandlerFactory = require('../middleware/awaitHandlerFactory.middlewar
 
 router.get('/', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.getAllFleets)); 
 router.get('/id/:id', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(fleetInfoController.getFleetById));
+router.get('/uid', auth(Role.FleetUser), awaitHandlerFactory(fleetInfoController.getFleetByUserId));
 router.get('/name/:name', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.getFleetByName));
 router.get('/search', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.searchFleets));
 router.get('/filter', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.filterFleets));

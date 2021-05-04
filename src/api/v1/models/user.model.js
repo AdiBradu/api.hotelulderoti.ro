@@ -31,11 +31,11 @@ class DBUserModel {
     return result[0];
   }
 
-  create = async ({user_type = 0, email, first_name='', last_name='', password, created_by=0, created = Date.now(), updated = Date.now()}) => {
+  create = async ({user_type = 0, email, first_name='', last_name='', phone='', password, created_by=0, created = Date.now(), updated = Date.now()}) => {
     const sql = `INSERT INTO ${this.tableName}
-    (user_type, email, first_name, last_name, password, created_by, created, updated) VALUES (?,?,?,?,?,?,?,?)`;
+    (user_type, email, first_name, last_name, phone, password, created_by, created, updated) VALUES (?,?,?,?,?,?,?,?,?)`;
    
-    const result = await this._query(sql, [user_type, email, first_name, last_name, password, created_by, created, updated]);
+    const result = await this._query(sql, [user_type, email, first_name, last_name, phone, password, created_by, created, updated]);
     const lastInsId = result ? result.insertId : 0;
 
     return lastInsId;

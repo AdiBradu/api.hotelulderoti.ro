@@ -9,6 +9,7 @@ const userRouter = require('./api/v1/routes/user.routes');
 const authRouter = require('./api/v1/routes/auth.routes');
 const fleetRouter = require('./api/v1/routes/fleetInfo.routes');
 const vehicleRouter = require('./api/v1/routes/vehicle.routes');
+const partnerRouter = require('./api/v1/routes/partnerInfo.routes');
 const app = express();
 
 dotenv.config();
@@ -93,6 +94,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/fleets', fleetRouter);
 app.use('/api/v1/vehicles', vehicleRouter);
+app.use('/api/v1/partners', partnerRouter);
 
 //404 error
 app.all('*', (req, res, next) => {

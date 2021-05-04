@@ -129,6 +129,7 @@ class UserController {
       first_name: req.body.first_name,
       last_name: req.body.last_name,
       password: req.body.password,
+      phone: req.body.phone,
       created_by: req.session.userId,
       created: Date.now(),
       updated: Date.now()
@@ -187,6 +188,7 @@ class UserController {
       email: req.body.email,
       first_name: req.body.first_name,
       last_name: req.body.last_name,
+      phone: req.body.phone,
       password: req.body.password,
       created_by: req.session.userId,
       created: Date.now(),

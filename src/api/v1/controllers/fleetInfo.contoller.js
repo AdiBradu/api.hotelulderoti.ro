@@ -13,10 +13,6 @@ dotenv.config();
 class FleetInfoController {
 
   getAllFleets = async (req, res, next) => {
-    let searchParams = [];
-    let customSearchString=``;
-    searchParams.push(1);  
-    customSearchString += ' 1 = ?';
 
     if(req.session.userRole === 1) {      
       let fleetList = await FleetInfoModel.getAllFleets();
@@ -43,10 +39,22 @@ class FleetInfoController {
       let searchParams = [req.session.userId, req.params.id];
       fleet = await FleetInfoModel.agentSearch(` AND fleet_info.fi_id = ? `, searchParams);
       
-    } else if(req.session.userRole === 3) {
-      let searchParams = [req.params.id, req.session.userId];      
-      fleet = await FleetInfoModel.search(`fi_id = ? AND user_id = ?`, searchParams);
+    } 
+
+    if(!fleet || !fleet.length) {
+      throw new HttpException(401, 'Acces interzis');
     }
+    res.send(fleet);
+  }
+
+  getFleetByUserId = async (req, res, next) => {
+    let fleet
+    if(req.session.userRole !== 3) {
+      throw new HttpException(401, 'Acces interzis');
+    }
+
+    let searchParams = [req.session.userId];      
+    fleet = await FleetInfoModel.search(`user_id = ?`, searchParams);
 
     if(!fleet || !fleet.length) {
       throw new HttpException(401, 'Acces interzis');

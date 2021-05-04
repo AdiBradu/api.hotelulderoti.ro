@@ -33,6 +33,7 @@ class DBVehicleModel {
     
     return result[0];
   }
+  
   checkVehicleWriteAccess = async (id, userId, userRole) => {
     let hasAccess = false;
     let accessSql;
@@ -54,7 +55,7 @@ class DBVehicleModel {
                       LEFT JOIN vehicles ON fleet_info.fi_id = vehicles.fleet_id
                       WHERE fleet_info.user_id = ? AND vehicles.v_id = ? `;
       accessRes = await this._query(accessSql, [userId,id]);     
-      if(accessRes &&  accessRes.length) {
+      if(accessRes && accessRes.length) {
         hasAccess = true;  
       }
     }
