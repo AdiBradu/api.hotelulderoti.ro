@@ -29,9 +29,9 @@ class DBFleetInfoModel {
     let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear <= 3) AS excessiveUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (tire_tread_wear > 3 AND tire_tread_wear < 5)) AS mediumUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear > 5) AS noUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) AS excessiveUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires,
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM") as fleetTurismCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismTireCount,
       (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
@@ -54,9 +54,9 @@ class DBFleetInfoModel {
     let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear <= 3) AS excessiveUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (tire_tread_wear > 3 AND tire_tread_wear < 5)) AS mediumUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear > 5) AS noUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) AS excessiveUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires,
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM") as fleetTurismCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismTireCount,
       (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
@@ -96,9 +96,9 @@ class DBFleetInfoModel {
     let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear < 3) AS excessiveUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (tire_tread_wear > 3 AND tire_tread_wear < 5)) AS mediumUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear > 5) AS noUsageTires
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) AS excessiveUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires
 
       FROM ${this.tableName}`;
    
@@ -111,9 +111,9 @@ class DBFleetInfoModel {
     let sql = `SELECT ${this.tableName}.fi_id, ${this.tableName}.fleet_name, ${this.tableName}.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear < 3) AS excessiveUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (tire_tread_wear > 3 AND tire_tread_wear < 5)) AS mediumUsageTires,
-      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND tire_tread_wear > 5) AS noUsageTires
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) AS excessiveUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
+      (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires
 
       FROM ${this.tableName}
       LEFT JOIN sales_agent_fleet_assignment ON ${this.tableName}.fi_id = sales_agent_fleet_assignment.fleet_id

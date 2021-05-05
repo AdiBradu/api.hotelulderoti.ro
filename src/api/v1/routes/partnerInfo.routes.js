@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const partnerInfoController = require('../controllers/partnerinfo.controller');
+const partnerInfoController = require('../controllers/partnerInfo.controller');
 const auth = require('../middleware/auth.middleware');
 const Role = require('../utils/userRoles.utils');
 const awaitHandlerFactory = require('../middleware/awaitHandlerFactory.middleware');

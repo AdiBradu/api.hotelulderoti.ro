@@ -64,7 +64,6 @@ class DBPartnerInfoModel {
     
   }
 
-
   checkPartnerWriteAccess = async (id, userId, userRole) => {
     let hasAccess = false;
     let accessSql;
@@ -118,7 +117,7 @@ class DBPartnerInfoModel {
     sql += ` SET users.email = ? , users.first_name = ? , users.last_name = ? , users.phone = ? `;
     if(params.password) {
       sql += ` , users.password = ? `;  
-      uVals = [...vals, params.password];
+      uVals = [...uVals, params.password];
     }
 
     let pVals = [params.partner_name,params.partner_gov_id,params.partner_j,params.partner_address,params.partner_region,params.partner_city];
