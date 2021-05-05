@@ -92,7 +92,7 @@ class DBVehicleModel {
       vehicle_tire_count: result[0].vehicle_tire_count,
       vechicleBrand: result[0].vehicle_brand,
       vechicleModel: result[0].vehicle_model,
-      vehicleType:  result[0].vehicle_model,
+      vehicleType:  result[0].vehicle_type,
       vechicleMilage : result[0].vehicle_milage,
       vehicleTires: {
         tireIds: [resVTires[0].t_id,resVTires[1].t_id,resVTires[2].t_id,resVTires[3].t_id,resVTires[4] ? resVTires[4].t_id : 0,resVTires[5] ? resVTires[5].t_id : 0],
