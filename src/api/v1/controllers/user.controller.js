@@ -229,13 +229,85 @@ class UserController {
         const partnerAssignmentResult = await SalesAgentPartnerAssignmentModel.create(partnerAssignment);
 
         if(!partnerAssignmentResult) {        
-          throw new HttpException(500, 'Something 1went wrong');
+          throw new HttpException(500, 'Something went wrong');
         }
 
       }
     }
     
     res.status(201).send('Partener adaugat cu succes!');
+  }
+
+  createPartnersBulk = async (req, res, next) => {
+    
+    for (const [index, el] of req.body.partnersList.entries()) { 
+      let duplicateErr = false;
+      try {
+        let checkUserDuplicate = await UserModel.find({email: el.email});
+        if(checkUserDuplicate && checkUserDuplicate.length > 0) {
+          duplicateErr = true;
+        } 
+      } catch (error) {
+        duplicateErr = true;
+      }
+      if(!duplicateErr) {
+        el.password = await bcrypt.hash(el.password, 10);
+        
+        let userData = {
+          user_type : 4,
+          email: el.email,
+          first_name: el.first_name,
+          last_name: el.last_name,
+          phone: el.phone,
+          password: el.password,
+          created_by: req.session.userId,
+          created: Date.now(),
+          updated: Date.now()
+        }
+        let result = await UserModel.create(userData);
+
+        if(!result) {
+          throw new HttpException(500, 'Something went wrong');
+        }
+
+        let partnerInfo = {
+          user_id: result,
+          partner_name: el.partner_name,
+          partner_gov_id: el.partner_gov_id,
+          partner_j: el.partner_j,
+          partner_address: el.partner_address,
+          partner_region: el.partner_region,
+          partner_city: el.partner_city,
+          created: Date.now(),
+          updated: Date.now()
+        }
+
+        let partnerInfoResult = await PartnerInfoModel.create(partnerInfo);
+
+        if(!partnerInfoResult) {
+          throw new HttpException(500, 'Something went wrong');
+        } else {
+          if(req.session.userRole === Role.SalesAgent) {
+            let partnerAssignment = {
+              partner_id: partnerInfoResult, 
+              sales_agent_id: req.session.userId,
+              active: 1,
+              created: Date.now(),
+              updated: Date.now()
+            }
+            
+            let partnerAssignmentResult = await SalesAgentPartnerAssignmentModel.create(partnerAssignment);
+
+            if(!partnerAssignmentResult) {        
+              throw new HttpException(500, 'Something went wrong');
+            }
+
+          }
+        }
+      }
+    }
+    
+    res.status(201).send('Parteneri adaugati cu succes!');
   }
 
   updateUser = async (req, res, next) => {

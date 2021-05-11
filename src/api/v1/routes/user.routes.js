@@ -15,9 +15,9 @@ router.post('/admin', auth(Role.Admin), createUserSchema, awaitHandlerFactory(us
 router.post('/agent', auth(Role.Admin), createUserSchema, awaitHandlerFactory(userController.createSalesAgent));
 router.post('/fleet', auth(Role.Admin, Role.SalesAgent), createFleetSchema, awaitHandlerFactory(userController.createFleetUser));
 router.post('/partner', auth(Role.Admin, Role.SalesAgent), createPartnerSchema, awaitHandlerFactory(userController.createPartner));
+router.post('/partnerBulk', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(userController.createPartnersBulk));
 
 router.patch('/id/:id', auth(Role.Admin, Role.SalesAgent), updateUserSchema, awaitHandlerFactory(userController.updateUser));
-
 router.patch('/self_update', auth(), updateUserSchema, awaitHandlerFactory(userController.selfUpdate));
 
 

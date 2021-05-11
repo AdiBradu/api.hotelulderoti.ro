@@ -134,7 +134,7 @@ class VehicleController {
       }
     }
     
-    const checkVehicleDuplicate = await VehicleModel.find({fleet_id: req.body.fleetId, reg_number: req.body.regNumber, vehicle_brand: req.body.vechicleBrand, vehicle_model: req.body.vechicleModel, vehicle_type: req.body.vehicleType, in_use: 1});
+    const checkVehicleDuplicate = await VehicleModel.find({reg_number: req.body.regNumber, in_use: 1});
     if(checkVehicleDuplicate && checkVehicleDuplicate.length > 0) {
       throw new HttpException(402, 'Vehicul duplicat');  
     }
@@ -203,10 +203,11 @@ class VehicleController {
         throw new HttpException(401, 'Acces interzis');  
       }      
     }
-    req.body.vehiclesList.forEach(async (el, index) => {
+    
+    for (const [index, el] of req.body.vehiclesList.entries()) {  
       let duplicateErr = false;
       try {
-        let checkVehicleDuplicate = await VehicleModel.find({fleet_id: el.fleetId, reg_number: el.regNumber, vehicle_brand: el.vechicleBrand, vehicle_model: el.vechicleModel, vehicle_type: el.vehicleType, in_use: 1});
+        let checkVehicleDuplicate = await VehicleModel.find({reg_number: el.regNumber, in_use: 1});
         if(checkVehicleDuplicate && checkVehicleDuplicate.length > 0) {
           duplicateErr = true;
         } 
@@ -259,7 +260,7 @@ class VehicleController {
         }
       }
 
-    })
+    }
     
     res.status(201).send('Vehicule adaugate cu succes!');
   }
