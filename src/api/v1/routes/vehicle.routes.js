@@ -12,6 +12,8 @@ router.get('/getVehicleByRegNumber', auth(Role.Partner), awaitHandlerFactory(veh
 
 
 router.post('/', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(vehicleController.createVehicle));
+router.post('/bulk', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(vehicleController.createVehiclesBulk));
+
 
 router.patch('/id/:id', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(vehicleController.updateVehicle));
 

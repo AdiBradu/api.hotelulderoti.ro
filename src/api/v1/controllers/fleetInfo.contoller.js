@@ -3,9 +3,12 @@ const DBFleetInfoModel = require('../models/fleetInfo.model');
 const FleetInfoModel = new DBFleetInfoModel(query);
 const DBVehicleModel = require('../models/vehicle.model');
 const VehicleModel = new DBVehicleModel(query);
+const DBUserModel = require('../models/user.model');
+const UserModel = new DBUserModel(query);
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
 const Role = require('../utils/userRoles.utils');
+const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -61,6 +64,17 @@ class FleetInfoController {
     }
     res.send(fleet);
   }
+
+
+  getOwnDetails = async (req, res, next) => {
+    const fleet = await FleetInfoModel.getWithUserDataByUId(req.session.userId);
+    if(!fleet) {
+      throw new HttpException(404, 'Flota nu a fost gasita');
+    }
+
+    res.send(fleet);
+  }
+
 
   getFleetByName = async (req, res, next) => {
     const fleet = await FleetInfoModel.findOne({fleet_name: req.params.fleet_name});
@@ -128,6 +142,33 @@ class FleetInfoController {
     res.send(fleetsFiltersValues);      
   }
 
+
+  selfUpdate = async (req, res, next) => { 
+    this.checkValidation(req);
+    
+    await this.hashPassword(req);
+
+    const{ confirm_password, ...restOfUpdates } = req.body;
+  
+    const result = await FleetInfoModel.updateFleetByUId(restOfUpdates, req.session.userId);
+
+    if(!result) {
+      throw new HttpException(500, 'Server error');
+    }
+
+    const { affectedRows, changedRows, info } = result;
+
+    const message = !affectedRows ? 'Actualizare esuata' : 'Date actualizate';
+   
+    const user = await UserModel.findOne({ u_id: req.session.userId});
+    
+    const { password, ...usr } = user;
+
+    req.session.currentUser = user;
+    
+    res.send({message, info, usr});
+  }
+
   deleteFleetInfo = async (req, res, next) => {
     const result = await FleetInfoModel.delete(req.params.id);
     if(!result) {
@@ -140,6 +181,12 @@ class FleetInfoController {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
       throw new HttpException(400, 'Validation failed', errors);
+    }
+  }
+
+  hashPassword = async (req) => {
+    if(req.body.password) {
+      req.body.password = await bcrypt.hash(req.body.password, 10);
     }
   }
 

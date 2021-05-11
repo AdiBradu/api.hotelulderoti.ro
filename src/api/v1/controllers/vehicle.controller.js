@@ -187,6 +187,80 @@ class VehicleController {
     res.status(201).send('Vehicul adaugat cu succes!');
   }
 
+
+  createVehiclesBulk = async (req, res, next) => {
+    
+    if(req.session.userRole === 3) {
+      const fleetUserAccessCheck = await FleetInfoModel.find({fi_id: parseInt(req.body.vehiclesList[0].fleetId), user_id: req.session.userId})
+      if(!fleetUserAccessCheck || fleetUserAccessCheck.length < 1) {
+        throw new HttpException(401, 'Acces interzis');  
+      }
+    }
+
+    if(req.session.userRole === 2) {      
+      const agentAccessCheck = await SalesAgentFleetAssignmentModel.find({fleet_id: parseInt(req.body.vehiclesList[0].fleetId), sales_agent_id: req.session.userId, active: 1})
+      if(!agentAccessCheck || agentAccessCheck.length < 1) {
+        throw new HttpException(401, 'Acces interzis');  
+      }      
+    }
+    req.body.vehiclesList.forEach(async (el, index) => {
+      try {
+        let checkVehicleDuplicate = await VehicleModel.find({fleet_id: el.fleetId, reg_number: el.regNumber, vehicle_brand: el.vechicleBrand, vehicle_model: el.vechicleModel, vehicle_type: el.vehicleType, in_use: 1});
+        if(checkVehicleDuplicate && checkVehicleDuplicate.length > 0) {
+          throw new HttpException(402, 'Vehicul duplicat');  
+        } 
+      } catch (error) {
+
+      }
+
+      let vehicleData = {
+        fleet_id : el.fleetId,
+        vehicle_tire_count: el.vehicle_tire_count,
+        reg_number: el.regNumber,
+        vehicle_brand: el.vechicleBrand,
+        vehicle_model: el.vechicleModel,
+        vehicle_type: el.vehicleType,
+        vehicle_milage: el.vechicleMilage,
+        in_use: 1,      
+        created: Date.now(),
+        updated: Date.now()
+      }
+      let newVehicleId = await VehicleModel.create(vehicleData);
+
+      if(!newVehicleId) {
+        throw new HttpException(500, 'Something went wrong');
+      }
+
+      let vehicleTires = []
+      for(let i=0; i<el.vehicle_tire_count; i++) {
+        let tireToIns = {
+          vehicle_id: newVehicleId,
+          fleet_id:  parseInt(el.fleetId),
+          tire_position: parseInt(i+1),
+          tire_width: parseInt(el.vehicleTires.widths[i]),
+          tire_height: parseInt(el.vehicleTires.heights[i]),
+          tire_diameter: parseInt(el.vehicleTires.diameters[i]),
+          tire_speed_index: parseInt(el.vehicleTires.speedIndexes[i]),
+          tire_load_index: parseInt(el.vehicleTires.loadIndexes[i]),
+          tire_brand: parseInt(el.vehicleTires.brands[i]),
+          tire_model: el.vehicleTires.models[i],
+          tire_season: el.vehicleTires.seasons[i],
+          tire_dot: el.vehicleTires.dots[i],
+          tire_rim: parseInt(el.vehicleTires.rims[i]),
+          tire_tread_wear: parseFloat(el.vehicleTires.treadUsages[i]),
+          created: Date.now(),
+          updated: Date.now()
+        }    
+        let newTireResult = await TireModel.create(tireToIns);
+        if(!newTireResult) {
+          throw new HttpException(500, 'Something went wrong');
+        }
+      }
+    })
+    
+    res.status(201).send('Vehicule adaugate cu succes!');
+  }
+
   deleteVehicle = async (req, res, next) => {
     let result;
     if(req.session.userRole === 1) {

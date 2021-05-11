@@ -24,6 +24,14 @@ class DBFleetInfoModel {
     return await this._query(sql, [...values]);
   }
 
+
+  getWithUserDataByUId = async id => {
+    const sql = `SELECT users.email, users.first_name, users.last_name, users.phone, fleet_info.fleet_name, fleet_info.fleet_gov_id, fleet_info.fleet_j, fleet_info.fleet_address, fleet_info.fleet_region, fleet_info.fleet_city 
+                FROM fleet_info LEFT JOIN users ON fleet_info.user_id = users.u_id
+                WHERE fleet_info.user_id = ?`;
+    const result = await this._query(sql, [id]);
+    return result[0];
+  }
  
   search = async (customWhereQueryString, searchParams) => {
     let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
@@ -34,13 +42,13 @@ class DBFleetInfoModel {
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires,
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM") as fleetTurismCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismTireCount,
-      (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV") as fleetSuvCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvTireCount,
-      (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvSizesCount,
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvSizesCount,
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO") as fleetCargoCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoTireCount,
-      (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoSizesCount
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoSizesCount
 
       FROM ${this.tableName}`;
 
@@ -59,13 +67,13 @@ class DBFleetInfoModel {
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires,
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM") as fleetTurismCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismTireCount,
-      (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV") as fleetSuvCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvTireCount,
-      (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvSizesCount,
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvSizesCount,
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO") as fleetCargoCount,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoTireCount,
-      (SELECT COUNT(DISTINCT(tire_diameter)) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoSizesCount
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoSizesCount
 
       FROM ${this.tableName}
       LEFT JOIN sales_agent_fleet_assignment ON ${this.tableName}.fi_id = sales_agent_fleet_assignment.fleet_id
@@ -149,6 +157,28 @@ class DBFleetInfoModel {
     const lastFleetInsId = result ? result.insertId : 0;
 
     return lastFleetInsId;
+  }
+
+
+  updateFleetByUId = async (params, id) => {
+
+    let uVals = [params.email,params.first_name,params.last_name,params.phone];
+    
+    let sql = `UPDATE fleet_info, users `;
+    sql += ` SET users.email = ? , users.first_name = ? , users.last_name = ? , users.phone = ? `;
+    if(params.password) {
+      sql += ` , users.password = ? `;  
+      uVals = [...uVals, params.password];
+    }
+
+    let fVals = [params.fleet_name,params.fleet_gov_id,params.fleet_j,params.fleet_address,params.fleet_region,params.fleet_city];
+    sql += ` , fleet_info.fleet_name = ? , fleet_info.fleet_gov_id = ? , fleet_info.fleet_j = ? , fleet_info.fleet_address = ? , fleet_info.fleet_region = ? , fleet_info.fleet_city = ? 
+              WHERE fleet_info.user_id = users.u_id AND fleet_info.user_id = ? `;
+    let updVals = [...uVals, ...fVals];
+    
+    const result = await this._query(sql, [...updVals, id]);
+  
+    return result;
   }
 
   update = async (params, id) => {

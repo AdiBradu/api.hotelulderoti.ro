@@ -48,6 +48,15 @@ class DBPartnerInfoModel {
     return result[0];
   }
 
+  getWithUserDataByUId = async id => {
+    const sql = `SELECT users.email, users.first_name, users.last_name, users.phone, partner_info.partner_name, partner_info.partner_gov_id, partner_info.partner_j, partner_info.partner_address, partner_info.partner_region, partner_info.partner_city 
+                FROM partner_info LEFT JOIN users ON partner_info.user_id = users.u_id
+                WHERE partner_info.user_id = ?`;
+    const result = await this._query(sql, [id]);
+    return result[0];
+  }
+
+
   getDistinctPartnerRegions = async () => {
     let sql = `SELECT DISTINCT(partner_region) FROM ${this.tableName}`;
     return await this._query(sql);
@@ -129,6 +138,29 @@ class DBPartnerInfoModel {
   
     return result;
   }
+
+
+  updatePartnerByUId = async (params, id) => {
+
+    let uVals = [params.email,params.first_name,params.last_name,params.phone];
+    
+    let sql = `UPDATE partner_info, users `;
+    sql += ` SET users.email = ? , users.first_name = ? , users.last_name = ? , users.phone = ? `;
+    if(params.password) {
+      sql += ` , users.password = ? `;  
+      uVals = [...uVals, params.password];
+    }
+
+    let pVals = [params.partner_name,params.partner_gov_id,params.partner_j,params.partner_address,params.partner_region,params.partner_city];
+    sql += ` , partner_info.partner_name = ? , partner_info.partner_gov_id = ? , partner_info.partner_j = ? , partner_info.partner_address = ? , partner_info.partner_region = ? , partner_info.partner_city = ? 
+              WHERE partner_info.user_id = users.u_id AND partner_info.user_id = ? `;
+    let updVals = [...uVals, ...pVals];
+    
+    const result = await this._query(sql, [...updVals, id]);
+  
+    return result;
+  }
+
 
 
   delete = async (id) => {

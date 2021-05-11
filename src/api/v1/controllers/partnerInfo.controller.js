@@ -1,6 +1,8 @@
 const query = require('../db/db-connection');
 const DBPartnerInfoModel = require('../models/partnerInfo.model');
 const PartnerInfoModel = new DBPartnerInfoModel(query);
+const DBUserModel = require('../models/user.model');
+const UserModel = new DBUserModel(query);
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
 const Role = require('../utils/userRoles.utils');
@@ -36,7 +38,6 @@ class PartnerInfoController {
     res.send(partner);
   }
 
-
   getPartnerFiltersValues = async (req, res, next) => {
     let partnersRegions = await PartnerInfoModel.getDistinctPartnerRegions();
     
@@ -46,6 +47,16 @@ class PartnerInfoController {
 
   getPartnerByName = async (req, res, next) => {
     const partner = await PartnerInfoModel.findOne({partner_name: req.params.partner_name});
+    if(!partner) {
+      throw new HttpException(404, 'Partener nu a fost gasit');
+    }
+
+    res.send(partner);
+  }
+
+
+  getOwnDetails = async (req, res, next) => {
+    const partner = await PartnerInfoModel.getWithUserDataByUId(req.session.userId);
     if(!partner) {
       throw new HttpException(404, 'Partener nu a fost gasit');
     }
@@ -86,6 +97,33 @@ class PartnerInfoController {
       affectedRows ? 'Partner actualizat' : 'Actualizare esuata';
 
     res.send({message, info});
+  }
+
+
+  selfUpdate = async (req, res, next) => { 
+    this.checkValidation(req);
+    
+    await this.hashPassword(req);
+
+    const{ confirm_password, ...restOfUpdates } = req.body;
+  
+    const result = await PartnerInfoModel.updatePartnerByUId(restOfUpdates, req.session.userId);
+
+    if(!result) {
+      throw new HttpException(500, 'Server error');
+    }
+
+    const { affectedRows, changedRows, info } = result;
+
+    const message = !affectedRows ? 'Actualizare esuata' : 'Date actualizate';
+   
+    const user = await UserModel.findOne({ u_id: req.session.userId});
+    
+    const { password, ...usr } = user;
+
+    req.session.currentUser = user;
+    
+    res.send({message, info, usr});
   }
 
 
