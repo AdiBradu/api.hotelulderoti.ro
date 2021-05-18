@@ -32,11 +32,11 @@ class DBServiceOrderDetailModel {
     return result[0];
   }
 
-  create = async ({service_order_id, service_name, service_cost_partner, service_cost_fleet, tire_position, created = Date.now()}) => {
+  create = async ({service_order_id, service_name, service_cost_partner, service_cost_fleet, created = Date.now()}) => {
     const sql = `INSERT INTO ${this.tableName}
-    (service_order_id, service_name, service_cost_partner, service_cost_fleet, tire_position, created) VALUES (?,?,?,?,?,?)`;
+    (service_order_id, service_name, service_cost_partner, service_cost_fleet, created) VALUES (?,?,?,?,?)`;
    
-    const result = await this._query(sql, [service_order_id, service_name, service_cost_partner, service_cost_fleet, tire_position, created]);
+    const result = await this._query(sql, [service_order_id, service_name, service_cost_partner, service_cost_fleet, created]);
     const lastOrderDetailInsId = result ? result.insertId : 0;
 
     return lastOrderDetailInsId;

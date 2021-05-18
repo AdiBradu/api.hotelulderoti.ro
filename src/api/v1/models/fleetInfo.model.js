@@ -149,11 +149,11 @@ class DBFleetInfoModel {
     return result[0];
   }
 
-  create = async ({user_id, fleet_name, fleet_gov_id, fleet_j, fleet_address, fleet_region, fleet_city, created = Date.now(), updated = Date.now()}) => {
+  create = async ({user_id, fleet_name, fleet_gov_id, fleet_j, fleet_address, fleet_region, fleet_city, fleet_percent=20, created = Date.now(), updated = Date.now()}) => {
     const sql = `INSERT INTO ${this.tableName}
-    (user_id, fleet_name, fleet_gov_id, fleet_j, fleet_address, fleet_region, fleet_city, created, updated) VALUES (?,?,?,?,?,?,?,?,?)`;
+    (user_id, fleet_name, fleet_gov_id, fleet_j, fleet_address, fleet_region, fleet_city, fleet_percent, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?)`;
    
-    const result = await this._query(sql, [user_id, fleet_name, fleet_gov_id, fleet_j, fleet_address, fleet_region, fleet_city, created, updated]);
+    const result = await this._query(sql, [user_id, fleet_name, fleet_gov_id, fleet_j, fleet_address, fleet_region, fleet_city, fleet_percent, created, updated]);
     const lastFleetInsId = result ? result.insertId : 0;
 
     return lastFleetInsId;

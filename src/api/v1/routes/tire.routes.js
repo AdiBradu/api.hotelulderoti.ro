@@ -9,6 +9,8 @@ const awaitHandlerFactory = require('../middleware/awaitHandlerFactory.middlewar
 router.get('/', auth(Role.Admin), awaitHandlerFactory(tireController.getAllTires)); 
 router.get('/id/:id', auth(Role.Admin), awaitHandlerFactory(tireController.getTireById));
 router.get('/getFleetTires', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(tireController.getFleetTires));
+router.get('/getVehicleTires', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.Partner), awaitHandlerFactory(tireController.getVehicleTires));
+router.get('/getVehiclesTiresInfo', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.Partner), awaitHandlerFactory(tireController.getVehiclesTiresInfo));
 
 router.delete('/id/:id', auth(Role.Admin), awaitHandlerFactory(tireController.deleteTire));
 

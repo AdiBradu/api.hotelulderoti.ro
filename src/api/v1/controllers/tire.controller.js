@@ -27,6 +27,28 @@ class TireController {
     res.send(tire);
   }
 
+  getVehicleTires = async (req, res, next) => {
+    if(!req.query.v_id) {
+      throw new HttpException(401, 'Acces interzis');    
+    }
+    const vehicleTires = await TireModel.getVehicleTires(req.query.v_id);
+    if(!vehicleTires) {
+      throw new HttpException(404, 'Nici o anvelopa gasita');  
+    }
+    res.send(vehicleTires);
+  }
+
+  getVehiclesTiresInfo = async (req, res, next) => {
+    if(!req.query.vId) {
+      throw new HttpException(401, 'Acces interzis');    
+    }
+    const vehicleTires = await TireModel.find({vehicle_id: req.query.vId});
+    if(!vehicleTires) {
+      throw new HttpException(404, 'Nici o anvelopa gasita');  
+    }
+    res.send(vehicleTires);
+  }
+
   getFleetTires = async (req, res, next) => {
     if(!req.query.fleet_id) {
       throw new HttpException(404, 'Nici o anvelopa gasita');

@@ -97,6 +97,29 @@ class DBTireModel {
     }
   }
 
+
+  getVehicleTires = async vehicleId => {    
+    
+    let vehicleTiresSql = `SELECT tires.t_id, tire_widths.width, tire_heights.height, tire_rims.rim AS diameter, tire_speed_indexes.speed_index, 
+                        tire_load_indexes.load_index, tires.tire_season, tire_brands.brand, tires.tire_model, vehicles.vehicle_type, tires.tire_tread_wear, tires.tire_dot 
+                        FROM tires
+                        LEFT JOIN tire_widths ON tires.tire_width = tire_widths.tw_id
+                        LEFT JOIN tire_heights ON tires.tire_height = tire_heights.th_id 
+                        LEFT JOIN tire_rims ON tires.tire_diameter = tire_rims.tr_id 
+                        LEFT JOIN tire_speed_indexes ON tires.tire_speed_index = tire_speed_indexes.tsi_id 
+                        LEFT JOIN tire_load_indexes ON tires.tire_load_index = tire_load_indexes.tli_id 
+                        LEFT JOIN tire_brands ON tires.tire_brand = tire_brands.tb_id 
+                        LEFT JOIN vehicles ON tires.vehicle_id = vehicles.v_id 
+
+                        WHERE tires.vehicle_id = ?`;
+    let result = await this._query(vehicleTiresSql, [vehicleId]); 
+    return result;
+    
+  }
+
+
+
+
   create = async ({vehicle_id, fleet_id, tire_position, tire_width, tire_height, tire_diameter, tire_speed_index, tire_load_index, tire_brand, tire_model, tire_season, tire_dot, tire_rim, tire_tread_wear, created = Date.now(), updated = Date.now()}) => {
     const sql = `INSERT INTO ${this.tableName}
     (vehicle_id, fleet_id, tire_position, tire_width, tire_height, tire_diameter, tire_speed_index, tire_load_index, tire_brand, tire_model, tire_season, tire_dot, tire_rim, tire_tread_wear, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;

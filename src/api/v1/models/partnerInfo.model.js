@@ -73,6 +73,16 @@ class DBPartnerInfoModel {
     
   }
 
+  getAdminPartners = async () => {
+    let sql = `SELECT ${this.tableName}.pi_id, ${this.tableName}.partner_name, ${this.tableName}.partner_region  
+      FROM ${this.tableName}
+      WHERE 1=1
+      `;
+   
+    return await this._query(sql);
+    
+  }
+
   checkPartnerWriteAccess = async (id, userId, userRole) => {
     let hasAccess = false;
     let accessSql;
@@ -99,11 +109,11 @@ class DBPartnerInfoModel {
     return hasAccess;
   }
 
-  create = async ({user_id, partner_name, partner_gov_id, partner_j, partner_address, partner_region, partner_city, created = Date.now(), updated = Date.now()}) => {
+  create = async ({user_id, partner_name, partner_gov_id, partner_j, partner_address, partner_region, partner_city, partner_percent=0, created = Date.now(), updated = Date.now()}) => {
     const sql = `INSERT INTO ${this.tableName}
-    (user_id, partner_name, partner_gov_id, partner_j, partner_address, partner_region, partner_city, created, updated) VALUES (?,?,?,?,?,?,?,?,?)`;
+    (user_id, partner_name, partner_gov_id, partner_j, partner_address, partner_region, partner_city, partner_percent, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?)`;
    
-    const result = await this._query(sql, [user_id, partner_name, partner_gov_id, partner_j, partner_address, partner_region, partner_city, created, updated]);
+    const result = await this._query(sql, [user_id, partner_name, partner_gov_id, partner_j, partner_address, partner_region, partner_city, partner_percent, created, updated]);
     const lastPartnerInsId = result ? result.insertId : 0;
 
     return lastPartnerInsId;

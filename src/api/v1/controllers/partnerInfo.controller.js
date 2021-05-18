@@ -15,7 +15,7 @@ class PartnerInfoController {
 
   getAllPartners = async (req, res, next) => {
     if(req.session.userRole === 1) {      
-      let partnerList = await PartnerInfoModel.find();
+      let partnerList = await PartnerInfoModel.getAdminPartners();
       if(!partnerList.length) {
         throw new HttpException(404, 'Nici o flota gasita');
       }

@@ -6,7 +6,7 @@ const Role = require('../utils/userRoles.utils');
 const awaitHandlerFactory = require('../middleware/awaitHandlerFactory.middleware');
 
 
-router.get('/getVehicleTireAttributes', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(vehicleController.getVehicleTireAttributes));
+router.get('/getVehicleTireAttributes', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.Partner), awaitHandlerFactory(vehicleController.getVehicleTireAttributes));
 router.get('/getVehiclesWithTires', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(vehicleController.getVehiclesWithTires));
 router.get('/getVehicleByRegNumber', auth(Role.Partner), awaitHandlerFactory(vehicleController.getVehicleByRegNumber));
 

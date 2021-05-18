@@ -32,9 +32,22 @@ class UserController {
 
     res.send(userList);
   }
+  
+  getAllAgents = async (req, res, next) => {
+    let userList = await UserModel.find({user_type: 2});
+    if(!userList.length) {
+      throw new HttpException(404, 'No users found');
+    }
 
+    userList = userList.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+
+    res.send(userList);
+  }
   getUserById = async (req, res, next) => {
-    const user = await UserModel.findOne({id: req.params.id});
+    const user = await UserModel.findOne({u_id: req.params.id});
     if(!user) {
       throw new HttpException(404, 'User not found');
     }
@@ -148,6 +161,7 @@ class UserController {
       fleet_address: req.body.fleet_address,
       fleet_region: req.body.fleet_region,
       fleet_city: req.body.fleet_city,
+      fleet_percent: parseFloat(req.body.fleet_percent),
       created: Date.now(),
       updated: Date.now()
     }
@@ -208,6 +222,7 @@ class UserController {
       partner_address: req.body.partner_address,
       partner_region: req.body.partner_region,
       partner_city: req.body.partner_city,
+      partner_percent: parseFloat(req.body.partner_percent),
       created: Date.now(),
       updated: Date.now()
     }
@@ -278,6 +293,7 @@ class UserController {
           partner_address: el.partner_address,
           partner_region: el.partner_region,
           partner_city: el.partner_city,
+          partner_percent: parseFloat(el.partner_percent),
           created: Date.now(),
           updated: Date.now()
         }

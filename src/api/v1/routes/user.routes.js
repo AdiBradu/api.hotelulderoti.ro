@@ -10,6 +10,7 @@ const { createUserSchema, updateUserSchema, createFleetSchema, createPartnerSche
 router.get('/', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(userController.getAllUsers)); 
 router.get('/id/:id', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(userController.getUserById));
 router.get('/username/:username', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(userController.getUserByUserName));
+router.get('/getAllAgents', auth(Role.Admin), awaitHandlerFactory(userController.getAllAgents));
 
 router.post('/admin', auth(Role.Admin), createUserSchema, awaitHandlerFactory(userController.createAdmin));
 router.post('/agent', auth(Role.Admin), createUserSchema, awaitHandlerFactory(userController.createSalesAgent));
