@@ -51,7 +51,7 @@ class DBServiceOrderModel {
   }
 
   getFleetOrdersByUserId = async fId => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total  
+    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, service_orders.order_total_fleet AS order_total  
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
                  WHERE service_orders.fleet_id = ? 
@@ -61,7 +61,7 @@ class DBServiceOrderModel {
 
   getFleetOrderDetails = async (fId, oId) => {
     let orderDetails = {};
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, vehicles.vehicle_tire_count, vehicles.vehicle_type, service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total  
+    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, vehicles.vehicle_tire_count, vehicles.vehicle_type, service_orders.vehicle_mileage, service_orders.order_total_fleet AS order_total  
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
                  WHERE service_orders.so_id = ? AND service_orders.fleet_id = ? `;
@@ -70,7 +70,7 @@ class DBServiceOrderModel {
     if(!result.length) {
       return [];
     } else {
-      const sqlOrderDets = `SELECT sod_id, service_name, service_cost_partner AS order_detail_cost, created 
+      const sqlOrderDets = `SELECT sod_id, service_name, service_cost_fleet AS order_detail_cost, created 
                             FROM service_orders_details 
                             WHERE service_order_id = ? `;
       const resOrderDets = await this._query(sqlOrderDets, [oId]);
