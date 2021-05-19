@@ -50,6 +50,20 @@ class FleetInfoController {
     res.send(fleet);
   }
 
+  getWithUserDataByFleetId = async (req, res, next) => {
+    let fleet
+    if(req.session.userRole === 1) {     
+      fleet = await FleetInfoModel.getWithUserDataByFleetId(req.params.id);
+    } else if(req.session.userRole === 2) {      
+      fleet = await FleetInfoModel.agentGetWithUserDataByFleetId(req.session.userId, req.params.id);
+    } 
+
+    if(!fleet) {
+      throw new HttpException(401, 'Acces interzis');
+    }
+    res.send(fleet);
+  }
+
   getFleetByUserId = async (req, res, next) => {
     let fleet
     if(req.session.userRole !== 3) {
@@ -142,6 +156,31 @@ class FleetInfoController {
     res.send(fleetsFiltersValues);      
   }
 
+  updateFleet = async (req, res, next) => {
+    this.checkValidation(req);
+
+    let hasAccess = await FleetInfoModel.checkFleetWriteAccess(req.params.id, req.session.userId, req.session.userRole);  
+    if(!hasAccess) {
+      throw new HttpException(401, 'Acces interzis');  
+    }
+    
+    await this.hashPassword(req);
+
+    let { confirm_password, ...restOfUpdates } = req.body;
+
+    const result = await FleetInfoModel.updateFleet(restOfUpdates, req.params.id);
+
+    if(!result) {
+      throw new HttpException(500, 'Something went wrong');
+    }
+
+    const { affectedRows, changedRows, info } = result;
+
+    const message = !affectedRows ? 'Flota nu a fost gasita' : 
+      affectedRows ? 'Flota actualizata' : 'Actualizare esuata';
+
+    res.send({message, info});
+  }
 
   selfUpdate = async (req, res, next) => { 
     this.checkValidation(req);
@@ -169,8 +208,14 @@ class FleetInfoController {
     res.send({message, info, usr});
   }
 
-  deleteFleetInfo = async (req, res, next) => {
-    const result = await FleetInfoModel.delete(req.params.id);
+  deleteFleetInfo = async (req, res, next) => {    
+    let result;
+    if(req.session.userRole === 1) {
+      result = await FleetInfoModel.delete(req.params.id);
+    } else if(req.session.userRole === 2) {
+      result = await FleetInfoModel.agentDelete(req.params.id, req.session.userId);
+    }
+
     if(!result) {
       throw new HttpException(404, 'Flota nu a fost gasita');
     }

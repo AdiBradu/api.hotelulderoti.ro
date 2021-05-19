@@ -41,7 +41,7 @@ class DBPartnerInfoModel {
   }
 
   getWithUserData = async id => {
-    const sql = `SELECT users.email, users.first_name, users.last_name, users.phone, partner_info.partner_name, partner_info.partner_gov_id, partner_info.partner_j, partner_info.partner_address, partner_info.partner_region, partner_info.partner_city 
+    const sql = `SELECT users.email, users.first_name, users.last_name, users.phone, partner_info.partner_name, partner_info.partner_gov_id, partner_info.partner_j, partner_info.partner_address, partner_info.partner_region, partner_info.partner_city, partner_info.partner_percent  
                 FROM partner_info LEFT JOIN users ON partner_info.user_id = users.u_id
                 WHERE partner_info.pi_id = ?`;
     const result = await this._query(sql, [id]);
@@ -139,8 +139,8 @@ class DBPartnerInfoModel {
       uVals = [...uVals, params.password];
     }
 
-    let pVals = [params.partner_name,params.partner_gov_id,params.partner_j,params.partner_address,params.partner_region,params.partner_city];
-    sql += ` , partner_info.partner_name = ? , partner_info.partner_gov_id = ? , partner_info.partner_j = ? , partner_info.partner_address = ? , partner_info.partner_region = ? , partner_info.partner_city = ? 
+    let pVals = [params.partner_name,params.partner_gov_id,params.partner_j,params.partner_address,params.partner_region,params.partner_city,parseFloat(params.partner_percent.replace(",", ".")).toFixed(2)];
+    sql += ` , partner_info.partner_name = ? , partner_info.partner_gov_id = ? , partner_info.partner_j = ? , partner_info.partner_address = ? , partner_info.partner_region = ? , partner_info.partner_city = ? , partner_info.partner_percent = ?  
               WHERE partner_info.user_id = users.u_id AND partner_info.pi_id = ? `;
     let updVals = [...uVals, ...pVals];
     

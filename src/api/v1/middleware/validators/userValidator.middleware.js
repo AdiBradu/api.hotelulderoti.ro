@@ -245,18 +245,7 @@ exports.updateFleetSchema = [
   body('fleet_city')
     .optional()
     .isLength({max: 255})
-    .withMessage('Orasul poate contine maxim 255 de caractere'),
-  body()
-    .custom(value => {
-        return !!Object.keys(value).length;
-    })
-    .withMessage('Introduceti campurile pentru actualizare')
-    .custom(value => {
-        const updates = Object.keys(value);
-        const allowUpdates = ['email', 'first_name', 'last_name', 'phone', 'password', 'confirm_password', 'fleet_name', 'fleet_gov_id', 'fleet_j', 'fleet_address', 'fleet_region', 'fleet_city'];
-        return updates.every(update => allowUpdates.includes(update));
-    })
-    .withMessage('Actualizari invalide!') 
+    .withMessage('Orasul poate contine maxim 255 de caractere')
 ];
 
 
@@ -396,16 +385,5 @@ exports.updatePartnerSchema = [
   body('partner_city')
     .optional()
     .isLength({max: 255})
-    .withMessage('Orasul poate contine maxim 255 de caractere'),
-  body()
-    .custom(value => {
-        return !!Object.keys(value).length;
-    })
-    .withMessage('Introduceti campurile pentru actualizare')
-    .custom(value => {
-        const updates = Object.keys(value);
-        const allowUpdates = ['email', 'first_name', 'last_name', 'phone', 'password', 'confirm_password', 'partner_name', 'partner_gov_id', 'partner_j', 'partner_address', 'partner_region', 'partner_city'];
-        return updates.every(update => allowUpdates.includes(update));
-    })
-    .withMessage('Actualizari invalide!') 
+    .withMessage('Orasul poate contine maxim 255 de caractere')
 ];

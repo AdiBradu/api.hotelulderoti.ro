@@ -8,6 +8,7 @@ const { updateFleetSchema } = require('../middleware/validators/userValidator.mi
 
 router.get('/', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.getAllFleets)); 
 router.get('/id/:id', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(fleetInfoController.getFleetById));
+router.get('/getWithUserDataByFleetId/:id', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.getWithUserDataByFleetId));
 router.get('/uid', auth(Role.FleetUser), awaitHandlerFactory(fleetInfoController.getFleetByUserId));
 router.get('/name/:name', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.getFleetByName));
 router.get('/search', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.searchFleets));
@@ -16,9 +17,10 @@ router.get('/filtersValues', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), 
 router.get('/getFleetVehicles', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(fleetInfoController.getFleetVehicles));
 router.get('/me', auth(Role.FleetUser), awaitHandlerFactory(fleetInfoController.getOwnDetails));
 
+router.patch('/id/:id', auth(Role.Admin, Role.SalesAgent), updateFleetSchema, awaitHandlerFactory(fleetInfoController.updateFleet));
 router.patch('/selfUpdate', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), updateFleetSchema, awaitHandlerFactory(fleetInfoController.selfUpdate));
 
-router.delete('/id/:id', auth(Role.Admin), awaitHandlerFactory(fleetInfoController.deleteFleetInfo));
+router.delete('/id/:id', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fleetInfoController.deleteFleetInfo));
 
 
 module.exports = router;

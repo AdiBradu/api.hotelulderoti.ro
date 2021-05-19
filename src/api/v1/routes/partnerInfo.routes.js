@@ -13,7 +13,7 @@ router.get('/search/:search', auth(Role.Admin, Role.SalesAgent), awaitHandlerFac
 router.get('/filtersValues', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(partnerInfoController.getPartnerFiltersValues));
 router.get('/me', auth(Role.Partner), awaitHandlerFactory(partnerInfoController.getOwnDetails));
 
-router.patch('/id/:id', auth(Role.Admin, Role.SalesAgent, Role.Partner), updatePartnerSchema, awaitHandlerFactory(partnerInfoController.updatePartner));
+router.patch('/id/:id', auth(Role.Admin, Role.SalesAgent), updatePartnerSchema, awaitHandlerFactory(partnerInfoController.updatePartner));
 router.patch('/selfUpdate', auth(Role.Admin, Role.SalesAgent, Role.Partner), updatePartnerSchema, awaitHandlerFactory(partnerInfoController.selfUpdate));
 
 router.delete('/id/:id', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(partnerInfoController.deletePartnerInfo));

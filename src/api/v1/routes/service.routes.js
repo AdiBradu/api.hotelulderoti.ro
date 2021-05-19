@@ -8,6 +8,7 @@ const awaitHandlerFactory = require('../middleware/awaitHandlerFactory.middlewar
 
 router.get('/getAvailableServices', auth(Role.Admin, Role.SalesAgent, Role.Partner), awaitHandlerFactory(serviceOrderController.getAvailableServices));
 router.get('/getServiceOrdersByPartnerId', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(serviceOrderController.getServiceOrdersByPartnerId));
+router.get('/getServiceOrdersByFleetId', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(serviceOrderController.getServiceOrdersByFleetId));
 router.get('/getPartnerServiceOrders', auth(Role.Partner), awaitHandlerFactory(serviceOrderController.getPartnerServiceOrders));
 router.get('/getPartnerOrderDetails', auth(Role.Partner), awaitHandlerFactory(serviceOrderController.getPartnerOrderDetails));
 router.get('/getServiceOrders', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(serviceOrderController.getServiceOrders));

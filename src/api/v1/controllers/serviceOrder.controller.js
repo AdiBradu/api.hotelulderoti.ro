@@ -77,6 +77,14 @@ class ServiceOrderController {
     res.send(orderList);  
   }
 
+  getServiceOrdersByFleetId = async (req, res, next) => {    
+    let orderList = await ServiceOrderModel.getFleetOrdersByUserId(req.query.fleetId);
+    if(!orderList.length) {
+      throw new HttpException(404, 'No orders found');
+    }
+    res.send(orderList);  
+  }
+
   getPartnerServiceOrders = async (req, res, next) => {
     const resPartner = await PartnerInfoModel.findOne({user_id: req.session.userId});
     if(!resPartner) {
