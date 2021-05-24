@@ -8,31 +8,32 @@ const { validationResult } = require('express-validator');
 const Role = require('../utils/userRoles.utils');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
+const e = require('express');
 dotenv.config();
 
 
 class PartnerInfoController {
 
   getAllPartners = async (req, res, next) => {
-    if(req.session.userRole === 1) {      
+    /* if(req.session.userRole === 1) { */      
       let partnerList = await PartnerInfoModel.getAdminPartners();
       if(!partnerList.length) {
-        throw new HttpException(404, 'Nici o flota gasita');
+        throw new HttpException(404, 'Nici un partener gasit');
       }
       res.send(partnerList);
-    } else if(req.session.userRole === 2) {
+    /* } else if(req.session.userRole === 2) {
       let partnerList = await PartnerInfoModel.getAgentPartners(req.session.userId);
       if(!partnerList.length) {
         throw new HttpException(404, 'Nici o flota gasita');
       }
       res.send(partnerList);
-    }    
+    } */    
   }
 
   getPartnerById = async (req, res, next) => {
     const partner = await PartnerInfoModel.getWithUserData(req.params.id);
     if(!partner) {
-      throw new HttpException(404, 'Partener nu a fost gasit');
+      throw new HttpException(404, 'Partenerul nu a fost gasit');
     }
 
     res.send(partner);
@@ -48,7 +49,7 @@ class PartnerInfoController {
   getPartnerByName = async (req, res, next) => {
     const partner = await PartnerInfoModel.findOne({partner_name: req.params.partner_name});
     if(!partner) {
-      throw new HttpException(404, 'Partener nu a fost gasit');
+      throw new HttpException(404, 'Partenerul nu a fost gasit');
     }
 
     res.send(partner);
@@ -58,7 +59,7 @@ class PartnerInfoController {
   getOwnDetails = async (req, res, next) => {
     const partner = await PartnerInfoModel.getWithUserDataByUId(req.session.userId);
     if(!partner) {
-      throw new HttpException(404, 'Partener nu a fost gasit');
+      throw new HttpException(404, 'Partenerul nu a fost gasit');
     }
 
     res.send(partner);
@@ -85,7 +86,12 @@ class PartnerInfoController {
 
     let { confirm_password, ...restOfUpdates } = req.body;
 
-    const result = await PartnerInfoModel.updatePartner(restOfUpdates, req.params.id);
+    let result ;
+    if(req.session.userRole === 1) {
+      result = await PartnerInfoModel.updatePartner(restOfUpdates, req.params.id);
+    } else {  
+      result  = await PartnerInfoModel.agentUpdatePartner(restOfUpdates, req.params.id);
+    }
 
     if(!result) {
       throw new HttpException(500, 'Something went wrong');
@@ -130,11 +136,11 @@ class PartnerInfoController {
   deletePartnerInfo = async (req, res, next) => {
     
     let result;
-    if(req.session.userRole === 1) {
+    /* if(req.session.userRole === 1) { */
       result = await PartnerInfoModel.delete(req.params.id);
-    } else if(req.session.userRole === 2) {
+    /* } else if(req.session.userRole === 2) {
       result = await PartnerInfoModel.agentDelete(req.params.id, req.session.userId);
-    }
+    } */
 
     if(!result) {
       throw new HttpException(404, 'Partener nu a fost gasit');

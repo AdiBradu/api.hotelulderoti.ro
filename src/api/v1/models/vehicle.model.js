@@ -9,7 +9,7 @@ class DBVehicleModel {
   }
 
   find = async (params = {}) => {
-    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName}`;
+    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName} `;
 
     if(!Object.keys(params).length) {
       return await this._query(sql);
@@ -20,7 +20,7 @@ class DBVehicleModel {
     const columnSet = keys.map(key => `${key} = ?`).join(' AND '); 
     
     sql += ` WHERE ${columnSet}`;
-
+    sql += ` ORDER BY created DESC `;  
     return await this._query(sql, [...values]);
   }
 

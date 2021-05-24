@@ -151,7 +151,7 @@ class DBFleetInfoModel {
   }
 
   getDistinctFleetsRegions = async () => {
-    let sql = `SELECT DISTINCT(fleet_region) FROM ${this.tableName}`;
+    let sql = `SELECT DISTINCT(fleet_region) FROM ${this.tableName} ORDER BY fleet_region ASC`;
     return await this._query(sql);
   }
 

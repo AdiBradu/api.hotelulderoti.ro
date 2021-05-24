@@ -58,7 +58,7 @@ class DBPartnerInfoModel {
 
 
   getDistinctPartnerRegions = async () => {
-    let sql = `SELECT DISTINCT(partner_region) FROM ${this.tableName}`;
+    let sql = `SELECT DISTINCT(partner_region) FROM ${this.tableName} ORDER BY partner_region ASC`;
     return await this._query(sql);
   }
 
@@ -87,9 +87,9 @@ class DBPartnerInfoModel {
     let hasAccess = false;
     let accessSql;
     let accessRes;
-    if(userRole === 1) {
+    if(userRole === 1 || userRole === 2) {
       hasAccess = true;
-    } else if(userRole === 2) {
+    } /* else if(userRole === 2) {
       accessSql = `SELECT sapa_id 
                       FROM sales_agent_partner_assignment 
                       WHERE sales_agent_partner_assignment.sales_agent_id = ? AND sales_agent_partner_assignment.active = 1 AND sales_agent_partner_assignment.partner_id = ? `;
@@ -97,7 +97,7 @@ class DBPartnerInfoModel {
       if(accessRes &&  accessRes.length) {
         hasAccess = true;  
       }
-    } else if(userRole === 4) {
+    } */ else if(userRole === 4) {
       accessSql = `SELECT pi_id 
                       FROM partner_info 
                       WHERE user_id = ? AND pi_id = ? `;
@@ -141,6 +141,27 @@ class DBPartnerInfoModel {
 
     let pVals = [params.partner_name,params.partner_gov_id,params.partner_j,params.partner_address,params.partner_region,params.partner_city,parseFloat(params.partner_percent.replace(",", ".")).toFixed(2)];
     sql += ` , partner_info.partner_name = ? , partner_info.partner_gov_id = ? , partner_info.partner_j = ? , partner_info.partner_address = ? , partner_info.partner_region = ? , partner_info.partner_city = ? , partner_info.partner_percent = ?  
+              WHERE partner_info.user_id = users.u_id AND partner_info.pi_id = ? `;
+    let updVals = [...uVals, ...pVals];
+    
+    const result = await this._query(sql, [...updVals, id]);
+  
+    return result;
+  }
+
+  agentUpdatePartner = async (params, id) => {
+
+    let uVals = [params.email,params.first_name,params.last_name,params.phone];
+    
+    let sql = `UPDATE partner_info, users `;
+    sql += ` SET users.email = ? , users.first_name = ? , users.last_name = ? , users.phone = ? `;
+    if(params.password) {
+      sql += ` , users.password = ? `;  
+      uVals = [...uVals, params.password];
+    }
+
+    let pVals = [params.partner_name,params.partner_gov_id,params.partner_j,params.partner_address,params.partner_region,params.partner_city];
+    sql += ` , partner_info.partner_name = ? , partner_info.partner_gov_id = ? , partner_info.partner_j = ? , partner_info.partner_address = ? , partner_info.partner_region = ? , partner_info.partner_city = ?  
               WHERE partner_info.user_id = users.u_id AND partner_info.pi_id = ? `;
     let updVals = [...uVals, ...pVals];
     
