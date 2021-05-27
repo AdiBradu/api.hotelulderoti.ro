@@ -168,7 +168,12 @@ class FleetInfoController {
 
     let { confirm_password, ...restOfUpdates } = req.body;
 
-    const result = await FleetInfoModel.updateFleet(restOfUpdates, req.params.id);
+    let result ;
+    if(req.session.userRole === 1) {
+      result = await FleetInfoModel.updateFleet(restOfUpdates, req.params.id);
+    } else {  
+      result  = await FleetInfoModel.agentUpdateFleet(restOfUpdates, req.params.id);
+    }
 
     if(!result) {
       throw new HttpException(500, 'Something went wrong');

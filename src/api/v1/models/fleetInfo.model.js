@@ -246,6 +246,30 @@ class DBFleetInfoModel {
     return result;
   }
 
+
+  agentUpdateFleet = async (params, id) => {
+
+    let uVals = [params.email,params.first_name,params.last_name,params.phone];
+    
+    let sql = `UPDATE fleet_info, users `;
+    sql += ` SET users.email = ? , users.first_name = ? , users.last_name = ? , users.phone = ? `;
+    if(params.password) {
+      sql += ` , users.password = ? `;  
+      uVals = [...uVals, params.password];
+    }
+   
+    let fVals = [params.fleet_name,params.fleet_gov_id,params.fleet_j,params.fleet_address,params.fleet_region,params.fleet_city];
+    sql += ` , fleet_info.fleet_name = ? , fleet_info.fleet_gov_id = ? , fleet_info.fleet_j = ? , fleet_info.fleet_address = ? , fleet_info.fleet_region = ? , fleet_info.fleet_city = ?   
+              WHERE fleet_info.user_id = users.u_id AND fleet_info.fi_id = ? `;
+    let updVals = [...uVals, ...fVals];
+    
+    const result = await this._query(sql, [...updVals, id]);
+  
+    return result;
+  }
+
+
+
   update = async (params, id) => {
     const { columnSet, values } = multipleColumnSet(params);
 

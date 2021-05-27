@@ -136,6 +136,21 @@ class ServiceOrderController {
     res.send(orderList);  
   }
 
+  getVehicleOrders = async (req, res, next) => {
+    let vehicleOrders; 
+    if(req.session.userRole === 1) {
+      vehicleOrders = await ServiceOrderModel.getVehicleOrders(req.query.v_id);
+    } else if(req.session.userRole === 2)  {
+      vehicleOrders = await ServiceOrderModel.getAgentVehicleOrders(req.session.userId, req.query.v_id);
+    } else if(req.session.userRole === 3)  {
+      vehicleOrders = await ServiceOrderModel.getFleetVehicleOrders(req.session.userId, req.query.v_id);
+    }
+    if(!vehicleOrders) {
+      throw new HttpException(404, 'No orders found');
+    }
+    res.send(vehicleOrders);  
+  }
+
   createOrder = async (req, res, next) => {
     
     if(!req.body.vehicle_data || !req.body.services || !req.body.tires_data || !req.body.milage_upd) {

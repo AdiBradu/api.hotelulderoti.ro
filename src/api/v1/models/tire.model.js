@@ -42,7 +42,7 @@ class DBTireModel {
                             when (12 - tires.tire_tread_wear) > 5 then "buna"
                             when (12 - tires.tire_tread_wear) <= 3 then "excesiva"
                             when (12 - tires.tire_tread_wear) > 3 AND (12 - tires.tire_tread_wear) < 5 then "medie"
-                          end as tread_wear, tires.tire_dot      
+                          end as tread_wear, tires.tire_tread_wear, tires.tire_dot      
                           FROM tires
                           LEFT JOIN tire_widths ON tires.tire_width = tire_widths.tw_id
                           LEFT JOIN tire_heights ON tires.tire_height = tire_heights.th_id 
@@ -79,7 +79,7 @@ class DBTireModel {
                             when (12 - tires.tire_tread_wear) > 5 then "buna"
                             when (12 - tires.tire_tread_wear) <= 3 then "excesiva"
                             when (12 - tires.tire_tread_wear) > 3 AND (12 - tires.tire_tread_wear) < 5 then "medie"
-                          end as tread_wear, tires.tire_dot      
+                          end as tread_wear, tires.tire_tread_wear, tires.tire_dot      
                           FROM tires
                           LEFT JOIN tire_widths ON tires.tire_width = tire_widths.tw_id
                           LEFT JOIN tire_heights ON tires.tire_height = tire_heights.th_id 

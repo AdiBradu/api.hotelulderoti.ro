@@ -15,6 +15,7 @@ router.get('/getServiceOrders', auth(Role.Admin, Role.SalesAgent), awaitHandlerF
 router.get('/getOrderDetails', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(serviceOrderController.getOrderDetails));
 router.get('/getFleetServiceOrders', auth(Role.FleetUser), awaitHandlerFactory(serviceOrderController.getFleetServiceOrders));
 router.get('/getFleetOrderDetails', auth(Role.FleetUser), awaitHandlerFactory(serviceOrderController.getFleetOrderDetails));
+router.get('/getVehicleOrders', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), awaitHandlerFactory(serviceOrderController.getVehicleOrders))
 
 router.post('/', auth(Role.Admin, Role.SalesAgent, Role.Partner), awaitHandlerFactory(serviceOrderController.createOrder));
 
