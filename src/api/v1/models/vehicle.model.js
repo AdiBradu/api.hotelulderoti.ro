@@ -33,6 +33,13 @@ class DBVehicleModel {
     
     return result[0];
   }
+
+  findFleetHotelVehicles = async fId => {
+    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName} `;
+    
+    sql += ` WHERE fleet_id = ? AND v_id IN (SELECT vehicle_id FROM hotel_tires WHERE fleet_id = vehicles.fleet_id)`;
+    return await this._query(sql, [fId]);  
+  }
   
   checkVehicleWriteAccess = async (id, userId, userRole) => {
     let hasAccess = false;

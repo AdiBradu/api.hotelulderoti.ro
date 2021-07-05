@@ -13,7 +13,7 @@ class TireController {
   getAllTires = async (req, res, next) => {
     let tiresList = await TireModel.find();
       if(!fleetList.length) {
-        throw new HttpException(404, 'Nici o flota gasita');
+        throw new HttpException(404, 'Nici o anvelopa gasita');
       }
     res.send(fleetList);
   }
@@ -65,9 +65,9 @@ class TireController {
   deleteTire = async (req, res, next) => {
     const result = await TireModel.delete(req.params.id);
     if(!result) {
-      throw new HttpException(404, 'Flota nu a fost gasita');
+      throw new HttpException(404, 'Anvelopa nu a fost gasita');
     }
-    res.send('Flota deleted');
+    res.send('Anvelopa deleted');
   }
   
   checkValidation = (req) => {

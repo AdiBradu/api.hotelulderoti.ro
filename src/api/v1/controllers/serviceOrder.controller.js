@@ -194,7 +194,8 @@ class ServiceOrderController {
     if(!resultOrderInsId) {
       throw new HttpException(500, 'Eroare');
     }
-
+    let selfHotelServicesArr = [22,23,24,25,26,27];
+    let enterpriseHotelServicesArr = [31,32,33,34,35,36];
     for (const [i, el] of req.body.services.entries()) { 
       if(!isNaN(el.s_id)) {
         let servicePriceDets = listServicesListPrices.filter(item => item.s_id === el.s_id);
@@ -203,7 +204,14 @@ class ServiceOrderController {
         let resServiceOrderDetail = await ServiceOrderDetailModel.create({service_order_id: resultOrderInsId, service_name: el.service_name, service_cost_partner: parseFloat(serviceCostPartner).toFixed(2), service_cost_fleet: parseFloat(serviceCostFleet).toFixed(2), created: Date.now()});
         if(!resServiceOrderDetail) {
           throw new HttpException(500, 'Eroare');break;
-        }  
+        }         
+        if(selfHotelServicesArr.indexOf(parseInt(el.s_id)) !== -1) {
+          let resHotelAction = await ServiceOrderDetailModel.handleHotelService(req.body.vehicle_data.v_id, resPartner.pi_id, 1);
+        }
+        if(enterpriseHotelServicesArr.indexOf(parseInt(el.s_id)) !== -1) {
+          let resHotelAction = await ServiceOrderDetailModel.handleHotelService(req.body.vehicle_data.v_id, resPartner.pi_id, 0);
+        }
+
       }  
     }
 

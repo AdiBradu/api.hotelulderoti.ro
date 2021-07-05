@@ -29,6 +29,12 @@ class FleetInfoController {
         throw new HttpException(404, 'Nici o flota gasita');
       }
       res.send(fleetList);
+    } else if(req.session.userRole === 5) {
+      let fleetList = await FleetInfoModel.getAllHotelFleets(req.session.userId);
+      if(!fleetList.length) {
+        throw new HttpException(404, 'Nici o flota gasita');
+      }
+      res.send(fleetList);
     }
     
   }
@@ -40,9 +46,11 @@ class FleetInfoController {
       fleet = await FleetInfoModel.search(`fi_id = ? `, searchParams);
     } else if(req.session.userRole === 2) {
       let searchParams = [req.session.userId, req.params.id];
-      fleet = await FleetInfoModel.agentSearch(` AND fleet_info.fi_id = ? `, searchParams);
-      
-    } 
+      fleet = await FleetInfoModel.agentSearch(` AND fleet_info.fi_id = ? `, searchParams);      
+    } else if(req.session.userRole === 5) {
+      let searchParams = [req.params.id];
+      fleet = await FleetInfoModel.hotelSearch(`fi_id = ? `, searchParams);
+    }
 
     if(!fleet || !fleet.length) {
       throw new HttpException(401, 'Acces interzis');
@@ -143,8 +151,13 @@ class FleetInfoController {
     if(!req.query.fleet_id) {
       res.send([]);
     } else {
-      let fleetVehicleList = await VehicleModel.find({fleet_id: req.query.fleet_id});
-      res.send(fleetVehicleList); 
+      if(req.session.userRole !== 5) {
+        let fleetVehicleList = await VehicleModel.find({fleet_id: req.query.fleet_id});
+        res.send(fleetVehicleList); 
+      } else {
+        let fleetVehicleList = await VehicleModel.findFleetHotelVehicles(req.query.fleet_id);
+        res.send(fleetVehicleList);   
+      }
     }
   }
 

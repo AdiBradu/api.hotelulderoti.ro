@@ -32,6 +32,33 @@ class DBServiceOrderDetailModel {
     return result[0];
   }
 
+
+  handleHotelService = async (vId, pId, hServiceType) => {
+    let sqlVehicleTires = `SELECT * FROM tires WHERE vehicle_id = ? `;
+    let resVTires = await this._query(sqlVehicleTires, [vId]);
+    
+    for (const [index, el] of resVTires.entries()) {  
+      let sqlHTire = `INSERT INTO hotel_tires
+      (vehicle_id, fleet_id, tire_position, tire_width, tire_height, tire_diameter, tire_speed_index, tire_load_index, tire_brand, tire_model, tire_season, tire_dot, tire_rim, tire_tread_wear, hotel_type, hotel_id, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+      let resTire = await this._query(sqlHTire, [el.vehicle_id, el.fleet_id, el.tire_position, el.tire_width, el.tire_height, el.tire_diameter, el.tire_speed_index, el.tire_load_index, el.tire_brand, el.tire_model, el.tire_season, el.tire_dot, el.tire_rim, el.tire_tread_wear, hServiceType, pId,  Date.now(), Date.now()]);  
+    }
+    if(hServiceType === 0) {
+      const sqlReq = `INSERT INTO hotel_requests 
+      (partner_id, vehicle_id, request_type, request_status, created, updated) VALUES (?,?,?,?,?,?)`;
+      const result = await this._query(sqlReq, [pId, vId, 1, 0, Date.now(), Date.now()]);    
+      const lastReqInsId = result ? result.insertId : 0;
+
+      if(lastReqInsId > 0) {
+        for (const [index, el] of resVTires.entries()) {  
+          let sqlReqTire = `INSERT INTO hotel_requests_tires
+          (request_id, vehicle_id, fleet_id, tire_position, tire_width, tire_height, tire_diameter, tire_speed_index, tire_load_index, tire_brand, tire_model, tire_season, tire_dot, tire_rim, tire_tread_wear, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+          let resTire = await this._query(sqlReqTire, [lastReqInsId, el.vehicle_id, el.fleet_id, el.tire_position, el.tire_width, el.tire_height, el.tire_diameter, el.tire_speed_index, el.tire_load_index, el.tire_brand, el.tire_model, el.tire_season, el.tire_dot, el.tire_rim, el.tire_tread_wear, Date.now(), Date.now()]);  
+        }
+      }
+    }
+
+  }
+
   create = async ({service_order_id, service_name, service_cost_partner, service_cost_fleet, created = Date.now()}) => {
     const sql = `INSERT INTO ${this.tableName}
     (service_order_id, service_name, service_cost_partner, service_cost_fleet, created) VALUES (?,?,?,?,?)`;

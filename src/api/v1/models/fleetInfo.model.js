@@ -100,6 +100,30 @@ class DBFleetInfoModel {
     return await this._query(sql, searchParams);
   }
 
+  hotelSearch = async (customWhereQueryString, searchParams) => {
+    let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
+      (SELECT COUNT(vehicle_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) AS excessiveUsageTires,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires,
+      (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM" AND v_id IN (SELECT vehicle_id FROM hotel_tires WHERE fleet_id = fleet_info.fi_id)) as fleetTurismCount,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismTireCount,
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "TURISM")) as fleetTurismSizesCount,      
+      (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV" AND v_id IN (SELECT vehicle_id FROM hotel_tires WHERE fleet_id = fleet_info.fi_id)) as fleetSuvCount,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvTireCount,
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "SUV")) as fleetSuvSizesCount,
+      (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO" AND v_id IN (SELECT vehicle_id FROM hotel_tires WHERE fleet_id = fleet_info.fi_id)) as fleetCargoCount,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoTireCount,
+      (SELECT COUNT(DISTINCT tire_width, tire_height, tire_diameter) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND vehicle_id IN (SELECT v_id FROM vehicles WHERE fleet_id = fleet_info.fi_id AND vehicle_type = "CARGO")) as fleetCargoSizesCount
+
+      FROM ${this.tableName}`;
+
+    sql += ` WHERE ${customWhereQueryString}`;
+   
+    return await this._query(sql, searchParams);
+  }
+
 
   filterFleets = async (customWhereQueryString, searchParams) => {
     let sql = `SELECT fleet_info.fleet_name, fleet_info.fleet_region, 
@@ -147,6 +171,20 @@ class DBFleetInfoModel {
       `;
    
     return await this._query(sql, [agentId]);
+    
+  }
+
+  getAllHotelFleets = async () => {
+    let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
+      (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) AS excessiveUsageTires,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
+      (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires
+
+      FROM ${this.tableName}`;
+   
+    return await this._query(sql);
     
   }
 

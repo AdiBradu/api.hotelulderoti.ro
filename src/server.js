@@ -12,6 +12,8 @@ const vehicleRouter = require('./api/v1/routes/vehicle.routes');
 const partnerRouter = require('./api/v1/routes/partnerInfo.routes');
 const tireRouter = require('./api/v1/routes/tire.routes');
 const serviceRouter = require('./api/v1/routes/service.routes');
+const hotelTireRouter = require('./api/v1/routes/hotelTire.routes');
+const hotelRequestRouter = require('./api/v1/routes/hotelRequest.routes');
 const app = express();
 
 dotenv.config();
@@ -99,6 +101,8 @@ app.use('/api/v1/vehicles', vehicleRouter);
 app.use('/api/v1/partners', partnerRouter);
 app.use('/api/v1/tires', tireRouter);
 app.use('/api/v1/services', serviceRouter);
+app.use('/api/v1/hotelTires', hotelTireRouter);
+app.use('/api/v1/hotelRequests', hotelRequestRouter);
 //404 error
 app.all('*', (req, res, next) => {
   const err = new HttpException(404, 'Endpoint Not Found');
