@@ -46,6 +46,21 @@ class UserController {
 
     res.send(userList);
   }
+
+  getAllManagers = async (req, res, next) => {
+    let userList = await UserModel.find({user_type: 5});
+    if(!userList.length) {
+      throw new HttpException(404, 'No users found');
+    }
+
+    userList = userList.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+
+    res.send(userList);
+  }
+
   getUserById = async (req, res, next) => {
     const user = await UserModel.findOne({u_id: req.params.id});
     if(!user) {
@@ -120,6 +135,24 @@ class UserController {
     
     if(req.session && req.session.userId) {
       req.body.user_type = 2;
+      req.body.created_by = req.session.userId;
+    }
+    const result = await UserModel.create(req.body);
+
+    if(!result) {
+      throw new HttpException(500, 'Something went wrong');
+    }
+
+    res.status(201).send('User was created!');
+  }
+
+  createHotelManager = async (req, res, next) => {
+    this.checkValidation(req);
+
+    await this.hashPassword(req);
+    
+    if(req.session && req.session.userId) {
+      req.body.user_type = 5;
       req.body.created_by = req.session.userId;
     }
     const result = await UserModel.create(req.body);
@@ -223,6 +256,7 @@ class UserController {
       partner_region: req.body.partner_region,
       partner_city: req.body.partner_city,
       partner_percent: parseFloat(req.body.partner_percent),
+      hotel_enabled: parseInt(req.body.hotel_enabled),
       created: Date.now(),
       updated: Date.now()
     }
@@ -294,6 +328,7 @@ class UserController {
           partner_region: el.partner_region,
           partner_city: el.partner_city,
           partner_percent: parseFloat(el.partner_percent),
+          hotel_enabled: parseInt(el.hotel_enabled),
           created: Date.now(),
           updated: Date.now()
         }

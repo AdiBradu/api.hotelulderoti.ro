@@ -37,9 +37,8 @@ class ServiceOrderController {
     let vehicleTire = await TireModel.findOne({vehicle_id: req.query.v_id});
     if(!vehicleTire) {
       throw new HttpException(404, 'No available services found');    
-    }
-    
-    let availableServicesList = await ServiceListModel.getVehicleAvailableServices(req.query.vehicle_type,vehicleTire.tire_diameter);
+    }    
+    let availableServicesList = await ServiceListModel.getVehicleAvailableServices(req.query.vehicle_type,vehicleTire.tire_diameter, req.session.userId, req.query.v_id);
     if(!availableServicesList.length) {
       throw new HttpException(404, 'No available services found');
     }
@@ -211,7 +210,6 @@ class ServiceOrderController {
         if(enterpriseHotelServicesArr.indexOf(parseInt(el.s_id)) !== -1) {
           let resHotelAction = await ServiceOrderDetailModel.handleHotelService(req.body.vehicle_data.v_id, resPartner.pi_id, 0);
         }
-
       }  
     }
 
