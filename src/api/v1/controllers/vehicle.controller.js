@@ -50,7 +50,7 @@ class VehicleController {
   }
 
   getVehicleByRegNumber = async (req, res, next) => {
-    const vehicle = await VehicleModel.findOne({reg_number: req.query.searchString});
+    const vehicle = await VehicleModel.findByRegNumber({reg_number: req.query.searchString});
     if(!vehicle) {
       throw new HttpException(404, 'Vechiculul nu a fost gasit');
     }

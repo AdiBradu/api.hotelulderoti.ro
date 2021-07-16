@@ -34,6 +34,18 @@ class DBVehicleModel {
     return result[0];
   }
 
+  findByRegNumber = async (params) => {
+    const { columnSet, values } = multipleColumnSet(params);
+    const sql = `SELECT ${this.tableName}.* , fleet_info.fleet_name 
+                 FROM ${this.tableName}
+                 LEFT JOIN fleet_info ON ${this.tableName}.fleet_id = fleet_info.fi_id 
+                 WHERE ${columnSet}`;
+    
+    const result = await this._query(sql, [...values]);
+    
+    return result[0];
+  } 
+
   findFleetHotelVehicles = async fId => {
     let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName} `;
     

@@ -45,6 +45,14 @@ class ServiceOrderController {
     res.send(availableServicesList);
   }
 
+  getServicesList =  async (req, res, next) => {
+    let servicesList = await ServiceListModel.getServicesList();
+    if(!servicesList.length) {
+      throw new HttpException(404, 'No available services found');
+    }
+    res.send(servicesList);
+  }
+
   getFleetServiceOrders = async (req, res, next) => {
     const resFleet = await FleetInfoModel.findOne({user_id: req.session.userId});
     if(!resFleet) {
@@ -169,6 +177,8 @@ class ServiceOrderController {
     let servicesListPriceTotal = 0;
     let additionalServicesTotal = 0;
     let listServicesListPrices = []; 
+    let ownHotelS = false;
+    let enterpriseHotelS = false;
     for (const [i, el] of req.body.services.entries()) {
       if(el.s_id !== 'km_upd' && el.s_id !== 'tire_upd'){
         if(!isNaN(el.s_id)) {
@@ -176,8 +186,18 @@ class ServiceOrderController {
           if(!serviceDetails || serviceDetails.length < 1) {
             throw new HttpException(500, 'Eroare'); break;      
           }
-          servicesListPriceTotal += parseFloat(serviceDetails['service_cost']);     
-          listServicesListPrices.push({s_id: el.s_id, s_list_cost: serviceDetails['service_cost']});   
+          if(serviceDetails['hotel_service'] === 1) {
+            ownHotelS = true;  
+          }
+          if(serviceDetails['hotel_service'] === 2) {
+            enterpriseHotelS = true;  
+          }
+          let currentServiceCost = serviceDetails['service_cost'];
+          if(serviceDetails['cost_type'] === 1) {
+            currentServiceCost = parseFloat(serviceDetails['service_cost'] * parseInt(req.body.vehicle_data.vehicle_tire_count));     
+          } 
+          servicesListPriceTotal += parseFloat(currentServiceCost);    
+          listServicesListPrices.push({s_id: el.s_id, s_list_cost: currentServiceCost});   
         } else {
           let addSItem = req.body.additional_services.filter(item => item.service_name === el.s_id);          
           additionalServicesTotal += parseFloat(addSItem[0]['service_price']);
@@ -192,9 +212,7 @@ class ServiceOrderController {
 
     if(!resultOrderInsId) {
       throw new HttpException(500, 'Eroare');
-    }
-    let selfHotelServicesArr = [22,23,24,25,26,27];
-    let enterpriseHotelServicesArr = [31,32,33,34,35,36];
+    }    
     for (const [i, el] of req.body.services.entries()) { 
       if(!isNaN(el.s_id)) {
         let servicePriceDets = listServicesListPrices.filter(item => item.s_id === el.s_id);
@@ -204,10 +222,10 @@ class ServiceOrderController {
         if(!resServiceOrderDetail) {
           throw new HttpException(500, 'Eroare');break;
         }         
-        if(selfHotelServicesArr.indexOf(parseInt(el.s_id)) !== -1) {
+        if(ownHotelS) {
           let resHotelAction = await ServiceOrderDetailModel.handleHotelService(req.body.vehicle_data.v_id, resPartner.pi_id, 1);
         }
-        if(enterpriseHotelServicesArr.indexOf(parseInt(el.s_id)) !== -1) {
+        if(enterpriseHotelS) {
           let resHotelAction = await ServiceOrderDetailModel.handleHotelService(req.body.vehicle_data.v_id, resPartner.pi_id, 0);
         }
       }  
@@ -259,7 +277,38 @@ class ServiceOrderController {
     res.status(201).send('Comanda creata cu succes!');
   }
 
+  getServiceById = async (req, res, next) => {
+    let sInfo = await ServiceListModel.getServiceById(req.params.id);
+    if(!sInfo) {
+      throw new HttpException(404, 'No service found');
+    }
+    res.send(sInfo);    
+  }
 
+  createService = async (req, res, next) => { 
+    if(!req.body.service_name || !req.body.service_vehicle_type || !req.body.service_cost) {
+      throw new HttpException(500, 'Eroare');  
+    }    
+    let resNewService = await ServiceListModel.create({service_name: req.body.service_name, service_vehicle_type: req.body.service_vehicle_type, service_cost: parseFloat(req.body.service_cost).toFixed(2), hotel_service: parseInt(req.body.hotel_service), cost_type: parseInt(req.body.cost_type), min_diameter: parseInt(req.body.min_diameter), max_diameter: parseInt(req.body.max_diameter)});
+    if(!resNewService) {
+      throw new HttpException(500, 'Eroare');  
+    }
+    
+    res.status(201).send('Serviciu creat cu succes!');
+  }
+
+
+  updateService = async (req, res, next) => {
+    if(!req.body.service_name || !req.body.service_vehicle_type || !req.body.service_cost) {
+      throw new HttpException(500, 'Eroare');  
+    }   
+    let resNewService = await ServiceListModel.update({sl_id: req.params.id, service_name: req.body.service_name, service_vehicle_type: req.body.service_vehicle_type, service_cost: parseFloat(req.body.service_cost).toFixed(2), hotel_service: parseInt(req.body.hotel_service), cost_type: parseInt(req.body.cost_type), min_diameter: parseInt(req.body.min_diameter), max_diameter: parseInt(req.body.max_diameter)});
+    if(!resNewService) {
+      throw new HttpException(500, 'Eroare');  
+    }
+    
+    res.status(200).send('Serviciu actualizat cu succes!'); 
+  }
 
   checkValidation = (req) => {
     const errors = validationResult(req);
