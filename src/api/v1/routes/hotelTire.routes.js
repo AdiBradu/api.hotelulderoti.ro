@@ -9,7 +9,7 @@ const awaitHandlerFactory = require('../middleware/awaitHandlerFactory.middlewar
 router.get('/', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getAllTires)); 
 router.get('/id/:id', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getTireById));
 router.get('/getFleetTires', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.HotelManager), awaitHandlerFactory(hotelTireController.getFleetTires));
-router.get('/getVehicleTires', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.HotelManager), awaitHandlerFactory(hotelTireController.getVehicleTires));
+router.get('/getVehicleTires', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.HotelManager, Role.Partner), awaitHandlerFactory(hotelTireController.getVehicleTires));
 router.get('/getVehiclesTiresInfo', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.Partner, Role.HotelManager), awaitHandlerFactory(hotelTireController.getVehiclesTiresInfo));
 router.get('/getHotelsList', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getHotelsList));
 router.get('/getVehiclesWithTires', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getVehiclesWithTires));
