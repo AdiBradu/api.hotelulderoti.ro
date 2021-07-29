@@ -17,20 +17,15 @@ const hotelRequestRouter = require('./api/v1/routes/hotelRequest.routes');
 const helmet = require("helmet");
 const app = express();
 app.use(helmet());
-app.all('*', function(req, res, next) {
-  console.log('req.hostname', req.hostname);
-  console.log('req.headers[\'x-forwarded-for\']', req.headers['x-forwarded-for']);
-  console.log('req.origin', req.origin);
-  console.log('req.headers', req.headers);
-  next();
-  /* if (process.env.NODE_ENV === 'PRODUCTION' && req.hostname !== 'hotelulderoti.ro') {
+app.all('*', function(req, res, next) {  
+  if (process.env.NODE_ENV === 'PRODUCTION' && (req.headers['origin'] !== 'https://hotelulderoti.ro' || req.headers['referer'] !== 'https://hotelulderoti.ro')) {
     res.writeHead(404, {
       'Content-Type': 'text/plain'
     });
     res.end('Not found');
   } else {
     next();
-  } */
+  }
 });
 dotenv.config();
 
