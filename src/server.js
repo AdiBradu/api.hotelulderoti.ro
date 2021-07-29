@@ -20,6 +20,8 @@ app.use(helmet());
 app.all('*', function(req, res, next) {
   console.log('req.hostname', req.hostname);
   console.log('req.headers[\'x-forwarded-for\']', req.headers['x-forwarded-for']);
+  console.log('req.origin', req.origin);
+  console.log('req.headers', req.headers);
   next();
   /* if (process.env.NODE_ENV === 'PRODUCTION' && req.hostname !== 'hotelulderoti.ro') {
     res.writeHead(404, {
