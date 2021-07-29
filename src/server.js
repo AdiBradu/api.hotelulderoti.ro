@@ -14,35 +14,24 @@ const tireRouter = require('./api/v1/routes/tire.routes');
 const serviceRouter = require('./api/v1/routes/service.routes');
 const hotelTireRouter = require('./api/v1/routes/hotelTire.routes');
 const hotelRequestRouter = require('./api/v1/routes/hotelRequest.routes');
+const helmet = require("helmet");
 const app = express();
-
-dotenv.config();
-/* function logResponseBody(req, res, next) {
-  var oldWrite = res.write,
-      oldEnd = res.end;
-
-  var chunks = [];
-
-  res.write = function (chunk) {
-    chunks.push(chunk);
-
-    return oldWrite.apply(res, arguments);
-  };
-
-  res.end = function (chunk) {
-    if (chunk)
-      chunks.push(chunk);
-
-    var body = Buffer.concat(chunks).toString('utf8');
-    console.log(res.getHeaders(), body);
-
-    oldEnd.apply(res, arguments);
-  };
-
+app.use(helmet());
+app.all('*', function(req, res, next) {
+  console.log('req.hostname', req.hostname);
+  console.log('req.headers[\'x-forwarded-for\']', req.headers['x-forwarded-for']);
   next();
-}
+  /* if (process.env.NODE_ENV === 'PRODUCTION' && req.hostname !== 'hotelulderoti.ro') {
+    res.writeHead(404, {
+      'Content-Type': 'text/plain'
+    });
+    res.end('Not found');
+  } else {
+    next();
+  } */
+});
+dotenv.config();
 
-app.use(logResponseBody); */
 app.use(express.json());
 
 var corsOptions = {
