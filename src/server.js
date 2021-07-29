@@ -19,14 +19,7 @@ const app = express();
 app.use(helmet());
 
 dotenv.config();
-app.all('*', function(req, res, next) {  
-  if (process.env.NODE_ENV === 'PRODUCTION' && (req.headers['origin'] !== 'https://hotelulderoti.ro' || req.headers['referer'] !== 'https://hotelulderoti.ro')) {
-    const err = new HttpException(404, 'Endpoint Not Found');
-    next(err);
-  } else {
-    next();
-  }
-});
+
 app.use(express.json());
 
 var corsOptions = {
@@ -78,6 +71,14 @@ app.use(session({
 const port = Number(process.env.PORT || 3331);
 
 //routing
+app.all('*', function(req, res, next) {   
+  if (process.env.NODE_ENV === 'PRODUCTION' && (req.headers['origin'] !== 'https://hotelulderoti.ro')) {
+    const err = new HttpException(404, 'Not Found');
+    next(err);
+  } else {
+    next();
+  }
+});
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/fleets', fleetRouter);
