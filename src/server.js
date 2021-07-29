@@ -17,6 +17,8 @@ const hotelRequestRouter = require('./api/v1/routes/hotelRequest.routes');
 const helmet = require("helmet");
 const app = express();
 app.use(helmet());
+
+dotenv.config();
 app.all('*', function(req, res, next) {  
   if (process.env.NODE_ENV === 'PRODUCTION' && (req.headers['origin'] !== 'https://hotelulderoti.ro' || req.headers['referer'] !== 'https://hotelulderoti.ro')) {
     res.writeHead(404, {
@@ -27,8 +29,6 @@ app.all('*', function(req, res, next) {
     next();
   }
 });
-dotenv.config();
-
 app.use(express.json());
 
 var corsOptions = {
