@@ -21,10 +21,8 @@ app.use(helmet());
 dotenv.config();
 app.all('*', function(req, res, next) {  
   if (process.env.NODE_ENV === 'PRODUCTION' && (req.headers['origin'] !== 'https://hotelulderoti.ro' || req.headers['referer'] !== 'https://hotelulderoti.ro')) {
-    res.writeHead(404, {
-      'Content-Type': 'text/plain'
-    });
-    res.end('Not found');
+    const err = new HttpException(404, 'Endpoint Not Found');
+    next(err);
   } else {
     next();
   }
