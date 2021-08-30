@@ -16,6 +16,8 @@ router.get('/filter', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(fle
 router.get('/filtersValues', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.HotelManager), awaitHandlerFactory(fleetInfoController.getFleetFiltersValues));
 router.get('/getFleetVehicles', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.HotelManager), awaitHandlerFactory(fleetInfoController.getFleetVehicles));
 router.get('/me', auth(Role.FleetUser), awaitHandlerFactory(fleetInfoController.getOwnDetails));
+router.get('/fleetsToExcel', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(fleetInfoController.fleetsToExcel)); 
+router.get('/fleetVehiclesToExcel', auth(Role.Admin, Role.SalesAgent, Role.FleetUser, Role.HotelManager), awaitHandlerFactory(fleetInfoController.fleetVehiclesToExcel));
 
 router.patch('/id/:id', auth(Role.Admin, Role.SalesAgent), updateFleetSchema, awaitHandlerFactory(fleetInfoController.updateFleet));
 router.patch('/selfUpdate', auth(Role.Admin, Role.SalesAgent, Role.FleetUser), updateFleetSchema, awaitHandlerFactory(fleetInfoController.selfUpdate));

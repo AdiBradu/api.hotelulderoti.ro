@@ -12,6 +12,7 @@ router.get('/getServiceOrdersByFleetId', auth(Role.Admin, Role.SalesAgent), awai
 router.get('/getPartnerServiceOrders', auth(Role.Partner), awaitHandlerFactory(serviceOrderController.getPartnerServiceOrders));
 router.get('/getPartnerOrderDetails', auth(Role.Partner), awaitHandlerFactory(serviceOrderController.getPartnerOrderDetails));
 router.get('/getServiceOrders', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(serviceOrderController.getServiceOrders));
+router.get('/servicesToExcel', auth(Role.Admin, Role.SalesAgent, Role.Partner, Role.FleetUser), awaitHandlerFactory(serviceOrderController.servicesToExcel));
 router.get('/getOrderDetails', auth(Role.Admin, Role.SalesAgent), awaitHandlerFactory(serviceOrderController.getOrderDetails));
 router.get('/getFleetServiceOrders', auth(Role.FleetUser), awaitHandlerFactory(serviceOrderController.getFleetServiceOrders));
 router.get('/getFleetOrderDetails', auth(Role.FleetUser), awaitHandlerFactory(serviceOrderController.getFleetOrderDetails));

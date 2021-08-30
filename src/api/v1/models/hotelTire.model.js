@@ -98,31 +98,126 @@ class DBHotelTireModel {
     }
   }
 
-  getAllHotelVehicles = async () => {
-    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type
-              FROM vehicles 
-              WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE 1)
-              `;
-    return await this._query(sql);  
+  countAllHotelVehicles = async (searchString, vehicleTypeFilter) => {
+    let queryParams = [];
+    let sql = `SELECT COUNT(v_id) AS vehicleCount FROM vehicles `;
+    sql += ` WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE 1) `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.vehicleCount);
   }
 
-  getFleetHotelVehicles = async fId => {
+  getAllHotelVehicles = async (currentPage, pageLimit, searchString, vehicleTypeFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [];
+    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type
+              FROM vehicles 
+              WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE 1) 
+              `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;          
+    return await this._query(sql, queryParams);  
+  }
+
+  countFleetHotelVehicles = async (fId, searchString, vehicleTypeFilter) => {
+    let queryParams = [fId];
+    let sql = `SELECT COUNT(v_id) AS vehicleCount FROM vehicles `;
+    sql += ` WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE fleet_id = ?) `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.vehicleCount);
+  }
+
+  getFleetHotelVehicles = async (fId, currentPage, pageLimit, searchString, vehicleTypeFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [fId];
     let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type
               FROM vehicles 
               WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE fleet_id = ?)
               `;
-    return await this._query(sql, [fId]);    
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;              
+    return await this._query(sql, queryParams);    
   }
 
-  getPartnerHotelVehicles = async pId => {
+  countPartnerHotelVehicles = async (pId, searchString, vehicleTypeFilter) => {
     let pInfoSql = `SELECT pi_id FROM partner_info WHERE user_id = ?`;
     let pInfo = await this._query(pInfoSql, [pId]);    
+
+    let queryParams = [pInfo[0].pi_id];
+    let sql = `SELECT COUNT(v_id) AS vehicleCount FROM vehicles `;
+    sql += ` WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE hotel_type = 1 AND hotel_id = ?) `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.vehicleCount);
+  }
+
+  getPartnerHotelVehicles = async (pId, currentPage, pageLimit, searchString, vehicleTypeFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+   
+
+    let pInfoSql = `SELECT pi_id FROM partner_info WHERE user_id = ?`;
+    let pInfo = await this._query(pInfoSql, [pId]);    
+
+    let queryParams = [pInfo[0].pi_id];
+
 
     let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type
               FROM vehicles 
               WHERE v_id IN (SELECT DISTINCT(vehicle_id) FROM hotel_tires WHERE hotel_type = 1 AND hotel_id = ?)
               `;
-    return await this._query(sql, [pInfo[0].pi_id]);    
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;   
+
+    return await this._query(sql, queryParams);    
   }
 
   getVehicleTires = async vehicleId => {    

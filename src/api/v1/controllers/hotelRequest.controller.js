@@ -10,14 +10,16 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 class HotelRequestController {
-  getAllRequests = async (req, res, next) => {
-    let allReqs = await HotelRequestModel.getAllRequests();
-    res.send(allReqs); 
+  getAllRequests = async (req, res, next) => {    
+    let reqsCount = await HotelRequestModel.countAllRequest(req.query.searchString, req.query.reqType, req.query.reqStatus);    
+    let reqsList = await HotelRequestModel.getAllRequests(req.query.page,req.query.limit, req.query.searchString, req.query.reqType, req.query.reqStatus);
+    res.send({reqsCount, reqsList}); 
   }
 
   getPartnerRequests = async (req, res, next) => {
-    let partnerReqs = await HotelRequestModel.getPartnerRequests(req.session.userId);
-    res.send(partnerReqs); 
+    let reqsCount = await HotelRequestModel.countPartnerRequest(req.session.userId, req.query.searchString, req.query.reqType, req.query.reqStatus);    
+    let reqsList = await HotelRequestModel.getPartnerRequests(req.session.userId, req.query.page,req.query.limit, req.query.searchString, req.query.reqType, req.query.reqStatus);
+    res.send({reqsCount, reqsList}); 
   }
 
   getRequestInfo =  async (req, res, next) => {

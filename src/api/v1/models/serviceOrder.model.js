@@ -32,59 +32,317 @@ class DBServiceOrderModel {
     return result[0];
   }
 
-  getVehicleOrders = async vId => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total, service_orders.order_total_fleet      
+  countVehicleOrders = async vId => {
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount FROM service_orders WHERE service_orders.vehicle_id = ? `;
+    let res = await this._query(sql, [vId]);
+    return parseInt(res[0]?.ordersCount);
+  }
+
+  getVehicleOrders = async (vId, currentPage, pageLimit) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;  
+
+    let sql = `SELECT service_orders.so_id, service_orders.created , service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total, service_orders.order_total_fleet      
                  FROM  service_orders 
                  WHERE service_orders.vehicle_id = ?  
                  ORDER BY service_orders.created DESC `;  
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+
     return await this._query(sql, [vId]);                 
   }
 
-  getAgentVehicleOrders = async (uId, vId) => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total, service_orders.order_total_fleet      
+  countAgentVehicleOrders = async (uId, vId) => {
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount FROM service_orders 
+               WHERE service_orders.vehicle_id = ? AND service_orders.fleet_id IN (SELECT fleet_id FROM sales_agent_fleet_assignment WHERE sales_agent_id = ? AND active = 1)  `;
+    let res = await this._query(sql, [vId, uId]);
+    return parseInt(res[0]?.ordersCount);
+  }
+
+  getAgentVehicleOrders = async (uId, vId, currentPage, pageLimit) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;  
+
+    let sql = `SELECT service_orders.so_id, service_orders.created , service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total, service_orders.order_total_fleet      
                  FROM  service_orders 
                  WHERE service_orders.vehicle_id = ? AND service_orders.fleet_id IN (SELECT fleet_id FROM sales_agent_fleet_assignment WHERE sales_agent_id = ? AND active = 1)  
                  ORDER BY service_orders.created DESC `;  
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
     return await this._query(sql, [vId, uId]);                 
   }
 
-  getFleetVehicleOrders = async (uId, vId) => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , service_orders.vehicle_mileage, service_orders.order_total_fleet AS order_total     
+  countFleetVehicleOrders = async (uId, vId) => {
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount FROM service_orders 
+               WHERE service_orders.vehicle_id = ? AND  service_orders.fleet_id = (SELECT fi_id FROM fleet_info WHERE user_id = ? )  `;
+    let res = await this._query(sql, [vId, uId]);
+    return parseInt(res[0]?.ordersCount);
+  }
+
+  getFleetVehicleOrders = async (uId, vId, currentPage, pageLimit) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;  
+    let sql = `SELECT service_orders.so_id, service_orders.created , service_orders.vehicle_mileage, service_orders.order_total_fleet AS order_total     
                  FROM  service_orders 
                  WHERE service_orders.vehicle_id = ? AND  service_orders.fleet_id = (SELECT fi_id FROM fleet_info WHERE user_id = ? )
-                 ORDER BY service_orders.created DESC `;  
+                 ORDER BY service_orders.created DESC `; 
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
     return await this._query(sql, [vId, uId]);         
   }
 
-  getAllOrders = async () => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, partner_info.partner_name, service_orders.order_total_partner AS order_total, fleet_info.fleet_name, service_orders.order_total_fleet      
+  countAllOrders = async (searchString, timePeriodFilter) => {
+    let queryParams = [];
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount 
+               FROM  service_orders 
+               LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id              
+               WHERE 1 
+               `;
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.ordersCount);           
+  }
+
+  getAllOrders = async (currentPage, pageLimit, searchString, timePeriodFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [];
+    let sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, partner_info.partner_name, service_orders.order_total_partner AS order_total, fleet_info.fleet_name, service_orders.order_total_fleet      
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
                  LEFT JOIN partner_info ON service_orders.partner_id = partner_info.pi_id 
                  LEFT JOIN fleet_info ON service_orders.fleet_id = fleet_info.fi_id 
                  WHERE 1=1 
-                 ORDER BY service_orders.created DESC `;  
-    return await this._query(sql);                 
+                 `;  
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }             
+    sql +=` ORDER BY service_orders.created DESC  `;
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql,queryParams);                 
   }
 
-  getAgentOrders = async uId => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, partner_info.partner_name, service_orders.order_total_partner AS order_total, fleet_info.fleet_name, service_orders.order_total_fleet    
+  countAgentOrders = async (uId, searchString, timePeriodFilter) => {
+    let queryParams = [uId];
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount 
+               FROM  service_orders 
+               LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id              
+               WHERE service_orders.fleet_id IN (SELECT fleet_id FROM sales_agent_fleet_assignment WHERE sales_agent_id = ? AND active = 1)  
+               `;
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.ordersCount);           
+  }
+
+  getAgentOrders = async (uId, currentPage, pageLimit, searchString, timePeriodFilter) => {
+    let queryParams = [uId];
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit; 
+    let sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, partner_info.partner_name, service_orders.order_total_partner AS order_total, fleet_info.fleet_name, service_orders.order_total_fleet    
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
                  LEFT JOIN partner_info ON service_orders.partner_id = partner_info.pi_id 
                  LEFT JOIN fleet_info ON service_orders.fleet_id = fleet_info.fi_id 
                  WHERE service_orders.fleet_id IN (SELECT fleet_id FROM sales_agent_fleet_assignment WHERE sales_agent_id = ? AND active = 1)  
-                 ORDER BY service_orders.created DESC `;  
-    return await this._query(sql, [uId]);                 
+                  `;  
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }                
+    sql +=` ORDER BY service_orders.created DESC  `;
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql,queryParams);              
   }
 
-  getFleetOrdersByUserId = async fId => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, service_orders.order_total_fleet AS order_total  
+  countFleetOrdersByUserId = async (fId, searchString, timePeriodFilter) => {
+    let queryParams = [fId];
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
-                 WHERE service_orders.fleet_id = ? 
-                 ORDER BY service_orders.created DESC `;  
-    return await this._query(sql, [fId]);                 
+                 WHERE service_orders.fleet_id = ? `;  
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.ordersCount); 
+  }
+
+  getFleetOrdersByUserId = async (fId, currentPage, pageLimit, searchString, timePeriodFilter) => {
+    let queryParams = [fId];
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit; 
+    let sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, service_orders.order_total_fleet AS order_total  
+                 FROM  service_orders 
+                 LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
+                 WHERE service_orders.fleet_id = ?  `;  
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }             
+    sql +=` ORDER BY service_orders.created DESC  `;
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql,queryParams);                   
   }
 
   getFleetOrderDetails = async (fId, oId) => {
@@ -117,19 +375,91 @@ class DBServiceOrderModel {
     }
   }
 
-  getPartnerOrdersByUserId = async pId => {
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total  
+  countPartnerOrdersByUserId = async (pId, searchString, timePeriodFilter) => {
+    let queryParams = [pId];
+    let sql = `SELECT COUNT(service_orders.so_id) AS ordersCount
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
-                 WHERE service_orders.partner_id = ? 
-                 ORDER BY service_orders.created DESC `;  
-    return await this._query(sql, [pId]);                 
+                 WHERE service_orders.partner_id = ? `;  
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.ordersCount); 
   }
 
+  getPartnerOrdersByUserId = async (pId, currentPage, pageLimit, searchString, timePeriodFilter) => {
+    let queryParams = [pId];
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit; 
+    let sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total  
+                 FROM  service_orders 
+                 LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
+                 WHERE service_orders.partner_id = ?  `;
+    if(searchString) {
+      sql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(timePeriodFilter) {
+      if(timePeriodFilter === 'luna curenta') {
+        let d = new Date();
+        d.setMonth(d.getMonth());
+        d.setDate(0);
+        d.setHours(0, 0, 0, 0);
+        let startT = d.getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'luna trecuta') {
+        let now = new Date();
+        let endT  = new Date(now.getFullYear(), now.getMonth(), 0).getTime();
+        let startT = new Date(now.getFullYear(), now.getMonth()-1, 1).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul curent') {
+        let n = new Date();
+        let startT = new Date(n.getFullYear(), 0, 1).getTime();
+        let endT = Date.now();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      } else if(timePeriodFilter === 'anul trecut') {
+        let startT  = new Date(new Date().getFullYear() - 1, 0, 1).getTime();
+        let endT = new Date(new Date().getFullYear() - 1, 11, 0).getTime();
+        sql += ` AND ( service_orders.created >= ${startT} AND ${endT} >= service_orders.created )  `; 
+      }
+    }               
+    sql +=` ORDER BY service_orders.created DESC  `;
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql,queryParams);                      
+  }
 
   getPartnerOrderDetails = async (pId, oId) => {
     let orderDetails = {};
-    const sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, vehicles.vehicle_tire_count, vehicles.vehicle_type, service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total  
+    let sql = `SELECT service_orders.so_id, service_orders.created , vehicles.reg_number, vehicles.vehicle_tire_count, vehicles.vehicle_type, service_orders.vehicle_mileage, service_orders.order_total_partner AS order_total  
                  FROM  service_orders 
                  LEFT JOIN vehicles ON service_orders.vehicle_id = vehicles.v_id 
                  WHERE service_orders.so_id = ? AND service_orders.partner_id = ? `;

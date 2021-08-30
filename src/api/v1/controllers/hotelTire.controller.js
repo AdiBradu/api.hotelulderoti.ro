@@ -5,6 +5,7 @@ const DBVehicleModel = require('../models/vehicle.model');
 const VehicleModel = new DBVehicleModel(query);
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
+const excel = require("exceljs");
 const Role = require('../utils/userRoles.utils');
 const dotenv = require('dotenv');
 dotenv.config();
@@ -20,28 +21,87 @@ class HotelTireController {
     res.send(tiresList);
   }
 
+  hotelVehiclesToExcel = async (req, res, next) => {
+    let hotelVehicles = [];
+    let queryCount = Math.ceil(parseInt(req.query.totalHotelVehicles) / 5000);    
+   
+    for (let i = 0; i < queryCount; i++) {
+      let fleetHList;
+      if(req.session.userRole !== 3 && req.session.userRole !== 4) {             
+        fleetHList = await HotelTireModel.getAllHotelVehicles(i, 5000, req.query.searchString, req.query.vehicleTypeFilter);
+      } else if(req.session.userRole === 3) {              
+        fleetHList = await HotelTireModel.getFleetHotelVehicles(req.query.fleet_id, i, 5000, req.query.searchString, req.query.vehicleTypeFilter);
+      } else if(req.session.userRole === 4) {              
+        fleetHList = await HotelTireModel.getPartnerHotelVehicles(req.session.userId, i, 5000, req.query.searchString, req.query.vehicleTypeFilter);
+      }   
+      
+      if(fleetHList.length){
+        fleetHList.forEach((f) => {          
+          hotelVehicles.push({
+            nrinmatriculare: f.reg_number,
+            km: f.vehicle_milage,
+            tipauto: f.vehicle_type
+          });
+        });
+      }
+    }    
+    let workbook = new excel.Workbook();
+    let worksheet = workbook.addWorksheet("Portofoliu hotel vehicule");
+
+    worksheet.columns = [
+      { header: "Nr. Inmatriculare", key: "nrinmatriculare", width: 30 },
+      { header: "KM", key: "km", width: 25 },
+      { header: "Tip auto", key: "tipauto", width: 25 }
+    ];
+    worksheet.addRows(hotelVehicles);
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell, colNumber) => {      
+      cell.font = {
+        bold: true,
+      };
+    })
+    //Commit the changed row to the stream
+    headerRow.commit();   
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=" + "Portofoliu hotel vehicule.xlsx"
+    );
+
+    return workbook.xlsx.write(res).then(function () {
+      res.status(200).end();
+    });
+  }
+
   getAllHotelVehicles = async (req, res, next) => {
-    let vehiclesList = await HotelTireModel.getAllHotelVehicles();
-    if(!vehiclesList.length) {
+    let hotelVehiclesCount = await HotelTireModel.countAllHotelVehicles(req.query.searchString, req.query.vehicleTypeFilter);
+    let hotelVehiclesList = await HotelTireModel.getAllHotelVehicles(req.query.page, req.query.limit, req.query.searchString, req.query.vehicleTypeFilter);
+    if(!hotelVehiclesList.length) {
       throw new HttpException(404, 'Nici un vehicul gasit');
     }
-    res.send(vehiclesList);
+    res.send({hotelVehiclesCount, hotelVehiclesList});
   }
 
   getFleetHotelVehicles = async (req, res, next) => { 
-    let fleetVehicleList = await HotelTireModel.getFleetHotelVehicles(req.query.fleet_id);
-    if(!fleetVehicleList.length) {
+    let hotelVehiclesCount = await HotelTireModel.countFleetHotelVehicles(req.query.fleet_id, req.query.searchString, req.query.vehicleTypeFilter);
+    let hotelVehiclesList = await HotelTireModel.getFleetHotelVehicles(req.query.fleet_id, req.query.page, req.query.limit, req.query.searchString, req.query.vehicleTypeFilter);
+    if(!hotelVehiclesList.length) {
       throw new HttpException(404, 'Nici un vehicul gasit');
     }
-    res.send(fleetVehicleList);
+    res.send({hotelVehiclesCount, hotelVehiclesList});
   }
 
   getPartnerHotelVehicles = async (req, res, next) => { 
-    let partnerVehicleList = await HotelTireModel.getPartnerHotelVehicles(req.session.userId);
-    if(!partnerVehicleList.length) {
+    let hotelVehiclesCount = await HotelTireModel.countPartnerHotelVehicles(req.session.userId, req.query.searchString, req.query.vehicleTypeFilter);
+    let hotelVehiclesList = await HotelTireModel.getPartnerHotelVehicles(req.session.userId, req.query.page, req.query.limit, req.query.searchString, req.query.vehicleTypeFilter);
+    
+    if(!hotelVehiclesList.length) {
       throw new HttpException(404, 'Nici un vehicul gasit');
     }
-    res.send(partnerVehicleList);  
+    res.send({hotelVehiclesCount, hotelVehiclesList});
   }
 
   getTireById = async (req, res, next) => {

@@ -15,6 +15,7 @@ const DBVehicleModel = require('../models/vehicle.model');
 const VehicleModel = new DBVehicleModel(query);
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
+const excel = require("exceljs");
 const Role = require('../utils/userRoles.utils');
 const dotenv = require('dotenv');
 dotenv.config();
@@ -58,11 +59,14 @@ class ServiceOrderController {
     if(!resFleet) {
       throw new HttpException(401, 'Acces interzis');    
     }
-    let orderList = await ServiceOrderModel.getFleetOrdersByUserId(resFleet.fi_id);
+   
+    let ordersCount = await ServiceOrderModel.countFleetOrdersByUserId(resFleet.fi_id, req.query.searchString, req.query.timePeriodFilter);
+    let orderList = await ServiceOrderModel.getFleetOrdersByUserId(resFleet.fi_id, req.query.page, req.query.limit, req.query.searchString, req.query.timePeriodFilter);
+    
     if(!orderList.length) {
       throw new HttpException(404, 'No orders found');
     }
-    res.send(orderList);  
+    res.send({ordersCount, orderList}); 
   }
 
   getFleetOrderDetails = async (req, res, next) => {
@@ -97,11 +101,12 @@ class ServiceOrderController {
     if(!resPartner) {
       throw new HttpException(401, 'Acces interzis');    
     }
-    let orderList = await ServiceOrderModel.getPartnerOrdersByUserId(resPartner.pi_id);
+    let ordersCount = await ServiceOrderModel.countPartnerOrdersByUserId(resPartner.pi_id, req.query.searchString, req.query.timePeriodFilter);
+    let orderList = await ServiceOrderModel.getPartnerOrdersByUserId(resPartner.pi_id, req.query.page, req.query.limit, req.query.searchString, req.query.timePeriodFilter);
     if(!orderList.length) {
       throw new HttpException(404, 'No orders found');
     }
-    res.send(orderList);  
+    res.send({ordersCount, orderList});  
   }
 
   getPartnerOrderDetails = async (req, res, next) => {
@@ -131,31 +136,132 @@ class ServiceOrderController {
 
   getServiceOrders = async (req, res, next) => {
     let orderList;
+    let ordersCount;
     if(req.session.userRole === 1) {
-      orderList = await ServiceOrderModel.getAllOrders();
+      ordersCount = await ServiceOrderModel.countAllOrders(req.query.page, req.query.limit, req.query.searchString, req.query.timePeriodFilter);
+      orderList = await ServiceOrderModel.getAllOrders(req.query.page, req.query.limit, req.query.searchString, req.query.timePeriodFilter);
     } else {
-      orderList = await ServiceOrderModel.getAgentOrders(req.session.userId);
+      ordersCount = await ServiceOrderModel.countAgentOrders(req.session.userId, req.query.page, req.query.limit, req.query.searchString, req.query.timePeriodFilter);
+      orderList = await ServiceOrderModel.getAgentOrders(req.session.userId, req.query.page, req.query.limit, req.query.searchString, req.query.timePeriodFilter);
     }
 
     if(!orderList.length) {
       throw new HttpException(404, 'No orders found');
     }
-    res.send(orderList);  
+    res.send({ordersCount, orderList});  
+  }
+
+  servicesToExcel = async (req, res, next) => {
+    let orders = [];
+    let queryCount = Math.ceil(parseInt(req.query.totalOrders) / 5000);   
+    let resPartner;
+    let resFleet;
+    if(req.session.userRole === 3) { 
+      resFleet = await FleetInfoModel.findOne({user_id: req.session.userId});
+    }
+    if(req.session.userRole === 4) { 
+      resPartner = await PartnerInfoModel.findOne({user_id: req.session.userId});
+    }
+    for (let i = 0; i < queryCount; i++) {
+      let orderList;
+      if(req.session.userRole === 1) {             
+        orderList = await ServiceOrderModel.getAllOrders(i, 5000, req.query.searchString, req.query.timePeriodFilter);
+      } else if(req.session.userRole === 2) {              
+        orderList = await ServiceOrderModel.getAgentOrders(req.session.userId, i, 5000, req.query.searchString, req.query.timePeriodFilter);
+      } else if(req.session.userRole === 3) {
+        orderList = await ServiceOrderModel.getFleetOrdersByUserId(resFleet.fi_id, i, 5000, req.query.searchString, req.query.timePeriodFilter);
+      } else if(req.session.userRole === 4) {
+        orderList = await ServiceOrderModel.getPartnerOrdersByUserId(resPartner.pi_id, i, 5000, req.query.searchString, req.query.timePeriodFilter);
+      }
+      
+      if(orderList.length){
+        orderList.forEach((f) => {       
+          let t = new Date(f.created);
+          let d = t.getDate();       
+          let m = t.getMonth()+1; 
+          let y = t.getFullYear();
+          let formattedDate = d+'/'+m+'/'+y  
+          if(req.session.userRole > 2) {    
+            orders.push({
+              data: formattedDate,
+              nrinmatriculare: f.reg_number,
+              km: f.vehicle_milage,
+              costinterventie: parseFloat(f.order_total.toFixed(2))
+            });
+          } else {
+            orders.push({
+              data: formattedDate,
+              nrinmatriculare: f.reg_number,
+              km: f.vehicle_milage,
+              partener: f.partner_name,
+              costpartener: parseFloat(f.order_total.toFixed(2)),
+              flota: f.fleet_name,
+              costflota: parseFloat(f.order_total_fleet.toFixed(2)),
+            });  
+          }
+        });
+      }
+    }    
+    let workbook = new excel.Workbook();
+    let worksheet = workbook.addWorksheet("Istoric comenzi");
+    if(req.session.userRole > 2) {   
+      worksheet.columns = [
+        { header: "Data", key: "data", width: 30 },
+        { header: "Nr. Inmatriculare", key: "nrinmatriculare", width: 30 },
+        { header: "KM", key: "km", width: 25 },
+        { header: "Cost interventie", key: "costinterventie", width: 25 }
+      ];
+    } else {
+      worksheet.columns = [
+        { header: "Data", key: "data", width: 30 },
+        { header: "Nr. Inmatriculare", key: "nrinmatriculare", width: 30 },
+        { header: "KM", key: "km", width: 25 },
+        { header: "Partener", key: "partener", width: 25 },
+        { header: "Cost partener", key: "costpartener", width: 25 },
+        { header: "Flota", key: "flota", width: 25 },
+        { header: "Cost flota", key: "costflota", width: 25 }
+      ];
+    }
+    worksheet.addRows(orders);
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell, colNumber) => {      
+      cell.font = {
+        bold: true,
+      };
+    })
+    //Commit the changed row to the stream
+    headerRow.commit();   
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=" + "Export comenzi.xlsx"
+    );
+
+    return workbook.xlsx.write(res).then(function () {
+      res.status(200).end();
+    });
   }
 
   getVehicleOrders = async (req, res, next) => {
     let vehicleOrders; 
+    let vehicleOrdersCount;
     if(req.session.userRole === 1) {
-      vehicleOrders = await ServiceOrderModel.getVehicleOrders(req.query.v_id);
-    } else if(req.session.userRole === 2)  {
-      vehicleOrders = await ServiceOrderModel.getAgentVehicleOrders(req.session.userId, req.query.v_id);
+      vehicleOrdersCount = await ServiceOrderModel.countVehicleOrders(req.query.v_id);
+      vehicleOrders = await ServiceOrderModel.getVehicleOrders(req.query.v_id, req.query.page, req.query.limit);
+    } else if(req.session.userRole === 2)  {      
+      vehicleOrdersCount = await ServiceOrderModel.countAgentVehicleOrders(req.session.userId, req.query.v_id);
+      vehicleOrders = await ServiceOrderModel.getAgentVehicleOrders(req.session.userId, req.query.v_id, req.query.page, req.query.limit);
     } else if(req.session.userRole === 3)  {
-      vehicleOrders = await ServiceOrderModel.getFleetVehicleOrders(req.session.userId, req.query.v_id);
+      vehicleOrdersCount = await ServiceOrderModel.countFleetVehicleOrders(req.session.userId, req.query.v_id);
+      vehicleOrders = await ServiceOrderModel.getFleetVehicleOrders(req.session.userId, req.query.v_id, req.query.page, req.query.limit);
     }
     if(!vehicleOrders) {
       throw new HttpException(404, 'No orders found');
     }
-    res.send(vehicleOrders);  
+    res.send({vehicleOrdersCount, vehicleOrders});  
   }
 
   createOrder = async (req, res, next) => {

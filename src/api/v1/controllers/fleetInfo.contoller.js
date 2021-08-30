@@ -7,6 +7,7 @@ const DBUserModel = require('../models/user.model');
 const UserModel = new DBUserModel(query);
 const HttpException = require('../utils/HttpException.utils');
 const { validationResult } = require('express-validator');
+const excel = require("exceljs");
 const Role = require('../utils/userRoles.utils');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
@@ -18,25 +19,86 @@ class FleetInfoController {
   getAllFleets = async (req, res, next) => {
 
     if(req.session.userRole === 1) {      
-      let fleetList = await FleetInfoModel.getAllFleets();
+      let fleetData = await FleetInfoModel.countAllFleets(req.query.searchString, req.query.region, req.query.healthScore);
+      let fleetList = await FleetInfoModel.getAllFleets(req.query.page, req.query.limit, req.query.searchString, req.query.region, req.query.healthScore);
       if(!fleetList.length) {
         throw new HttpException(404, 'Nici o flota gasita');
       }
-      res.send(fleetList);
+      res.send({fleetData, fleetList});
     } else if(req.session.userRole === 2) {
-      let fleetList = await FleetInfoModel.getAgentFleets(req.session.userId);
+      let fleetData = await FleetInfoModel.countAgentFleets(req.session.userId, req.query.searchString, req.query.region, req.query.healthScore);      
+      let fleetList = await FleetInfoModel.getAgentFleets(req.session.userId, req.query.page, req.query.limit, req.query.searchString, req.query.region, req.query.healthScore);
       if(!fleetList.length) {
         throw new HttpException(404, 'Nici o flota gasita');
       }
-      res.send(fleetList);
+      res.send({fleetData, fleetList});
     } else if(req.session.userRole === 5) {
-      let fleetList = await FleetInfoModel.getAllHotelFleets(req.session.userId);
+      let fleetData = await FleetInfoModel.countAllFleets(req.query.searchString, req.query.region, req.query.healthScore);
+      let fleetList = await FleetInfoModel.getAllHotelFleets(req.query.page, req.query.limit, req.query.searchString, req.query.region, req.query.healthScore);
       if(!fleetList.length) {
         throw new HttpException(404, 'Nici o flota gasita');
       }
-      res.send(fleetList);
+      res.send({fleetData, fleetList});
     }
     
+  }
+
+  fleetsToExcel = async (req, res, next) => {
+    let fleets = [];
+    let queryCount = Math.ceil(parseInt(req.query.totalFleets) / 5000);    
+    for (let i = 0; i < queryCount; i++) {
+      let fleetList;
+      if(req.session.userRole === 1) {             
+        fleetList = await FleetInfoModel.getAllFleets(i, 5000, req.query.searchString, req.query.region, req.query.healthScore);
+      } else if(req.session.userRole === 2) {              
+        fleetList = await FleetInfoModel.getAgentFleets(req.session.userId, i, 5000, req.query.searchString, req.query.region, req.query.healthScore);
+      } else if(req.session.userRole === 5) {       
+        fleetList = await FleetInfoModel.getAllHotelFleets(i, 5000, req.query.searchString, req.query.region, req.query.healthScore);       
+      }        
+      if(fleetList.length){
+        fleetList.forEach((f) => {
+          let tireHealthScore = f.tiresCount !== 0 ? Math.ceil((f.excessiveUsageTires * 1 + f.mediumUsageTires * 2 + f.noUsageTires * 3) / (f.tiresCount * 3)*100) : 0;
+          fleets.push({
+            denumire: f.fleet_name,
+            judet: f.fleet_region,
+            vehicule: f.vehiclesCount,
+            anvelope: f.tiresCount,
+            healthscore: tireHealthScore
+          });
+        });
+      }
+    }    
+    let workbook = new excel.Workbook();
+    let worksheet = workbook.addWorksheet("Portofoliu anvelope");
+
+    worksheet.columns = [
+      { header: "Denumire", key: "denumire", width: 30 },
+      { header: "Judet", key: "judet", width: 25 },
+      { header: "Vehicule", key: "vehicule", width: 25 },
+      { header: "Anvelope", key: "anvelope", width: 20 },
+      { header: "Health Score", key: "healthscore", width: 20 },
+    ];
+    worksheet.addRows(fleets);
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell, colNumber) => {      
+      cell.font = {
+        bold: true,
+      };
+    })
+    //Commit the changed row to the stream
+    headerRow.commit();   
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=" + "Export portofoliu anvelope.xlsx"
+    );
+
+    return workbook.xlsx.write(res).then(function () {
+      res.status(200).end();
+    });
   }
 
   getFleetById = async (req, res, next) => {
@@ -93,7 +155,6 @@ class FleetInfoController {
     if(!fleet) {
       throw new HttpException(404, 'Flota nu a fost gasita');
     }
-
     res.send(fleet);
   }
 
@@ -103,7 +164,6 @@ class FleetInfoController {
     if(!fleet) {
       throw new HttpException(404, 'Flota nu a fost gasita');
     }
-
     res.send(fleet);
   }
 
@@ -152,20 +212,77 @@ class FleetInfoController {
       res.send([]);
     } else {
       if(req.session.userRole !== 5) {
-        let fleetVehicleList = await VehicleModel.find({fleet_id: req.query.fleet_id});
-        res.send(fleetVehicleList); 
+        let fleetVehicleCount = await VehicleModel.countFleetVehicles(req.query.fleet_id, req.query.searchString, req.query.vehicleTypeFilter);
+        let fleetVehicleList = await VehicleModel.getFleetVehicles(req.query.fleet_id, req.query.page, req.query.limit, req.query.searchString, req.query.vehicleTypeFilter);        
+        res.send({fleetVehicleCount, fleetVehicleList}); 
       } else {
-        let fleetVehicleList = await VehicleModel.findFleetHotelVehicles(req.query.fleet_id);
-        res.send(fleetVehicleList);   
+        let fleetVehicleCount = await VehicleModel.countFleetHotelVehicles(req.query.fleet_id, req.query.searchString, req.query.vehicleTypeFilter);
+        let fleetVehicleList = await VehicleModel.getFleetHotelVehicles(req.query.fleet_id, req.query.page, req.query.limit, req.query.searchString, req.query.vehicleTypeFilter);
+        res.send({fleetVehicleCount, fleetVehicleList});   
       }
     }
   }
 
 
+  fleetVehiclesToExcel = async (req, res, next) => {
+    let fleetVehicles = [];
+    let queryCount = Math.ceil(parseInt(req.query.totalFleetVehicles) / 5000);    
+   
+    for (let i = 0; i < queryCount; i++) {
+      let fleetVList;
+      if(req.session.userRole !== 5) {             
+        fleetVList = await VehicleModel.getFleetVehicles(req.query.fleet_id, i, 5000, req.query.searchString, req.query.vehicleTypeFilter);
+      } else if(req.session.userRole === 5) {              
+        fleetVList = await VehicleModel.getFleetHotelVehicles(req.query.fleet_id, i, 5000, req.query.searchString, req.query.vehicleTypeFilter);
+      }  
+      
+      if(fleetVList.length){
+        fleetVList.forEach((f) => {          
+          fleetVehicles.push({
+            nrinmatriculare: f.reg_number,
+            km: f.vehicle_milage,
+            tipauto: f.vehicle_type
+          });
+        });
+      }
+    }    
+    let workbook = new excel.Workbook();
+    let worksheet = workbook.addWorksheet("Portofoliu vehicule flota");
+
+    worksheet.columns = [
+      { header: "Nr. Inmatriculare", key: "nrinmatriculare", width: 30 },
+      { header: "KM", key: "km", width: 25 },
+      { header: "Tip auto", key: "tipauto", width: 25 }
+    ];
+    worksheet.addRows(fleetVehicles);
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell, colNumber) => {      
+      cell.font = {
+        bold: true,
+      };
+    })
+    //Commit the changed row to the stream
+    headerRow.commit();   
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=" + "Portofoliu vehicule flota.xlsx"
+    );
+
+    return workbook.xlsx.write(res).then(function () {
+      res.status(200).end();
+    });
+  }
+
+
+
   getFleetFiltersValues = async (req, res, next) => {
     let fleetsRegions = await FleetInfoModel.getDistinctFleetsRegions();
-    
-    let fleetsFiltersValues = [{fleetsRegions: fleetsRegions}];
+    let fleetsHealthScores = await FleetInfoModel.getDistinctFleetsHealthScores();  
+    let fleetsFiltersValues = [{fleetsRegions: fleetsRegions, fleetsHealthScores: fleetsHealthScores}];
     res.send(fleetsFiltersValues);      
   }
 

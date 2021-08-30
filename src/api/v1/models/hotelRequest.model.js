@@ -40,8 +40,45 @@ class DBHotelRequestModel {
 
     return lastReqInsId;
   }
+  
+  countAllRequest = async (searchString, reqTypeFilter, reqStatusFilter) => {
+    let queryParams = [];
+    let reqsSql = `SELECT COUNT(hotel_requests.hr_id) AS reqsCount 
+                  FROM  hotel_requests 
+                  LEFT JOIN vehicles ON hotel_requests.vehicle_id = vehicles.v_id 
+                  WHERE 1  `;
+                        
+    if(searchString) {
+      reqsSql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(reqTypeFilter) {
+      if(reqTypeFilter === "Retragere") {
+        reqsSql += ` AND hotel_requests.request_type = 0 `; 
+      } else if(reqTypeFilter === "Depozitare hotel Dinamic 92") {
+        reqsSql += ` AND hotel_requests.request_type = 1 `; 
+      } else if(reqTypeFilter === "Depozitare hotel propriu") {
+        reqsSql += ` AND hotel_requests.request_type = 2 `; 
+      }    
+    }
+    if(reqStatusFilter) {
+      if(reqStatusFilter === "In asteptare") {
+        reqsSql += ` AND hotel_requests.request_status = 0 `; 
+      } else if(reqStatusFilter === "Aprobata") {
+        reqsSql += ` AND hotel_requests.request_status = 1 `; 
+      } else if(reqStatusFilter === "Procesata") {
+        reqsSql += ` AND hotel_requests.request_status = 2 `; 
+      }    
+    }    
+    let res = await this._query(reqsSql, queryParams);
+    return parseInt(res[0]?.reqsCount);
+  }
 
-  getAllRequests = async () => {    
+  getAllRequests = async (currentPage, pageLimit, searchString, reqTypeFilter, reqStatusFilter) => {    
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [];
     let reqsSql = `SELECT hotel_requests.hr_id, vehicles.reg_number, 
                   case 
                     when hotel_requests.request_type = 0 then "Retragere"
@@ -56,20 +93,86 @@ class DBHotelRequestModel {
                   hotel_requests.created 
                   FROM  hotel_requests 
                   LEFT JOIN vehicles ON hotel_requests.vehicle_id = vehicles.v_id 
-                  WHERE 1 
-                  ORDER BY hotel_requests.request_status ASC, hotel_requests.created DESC
+                  WHERE 1  
                   `;  
-    let res = await this._query(reqsSql);  
+    if(searchString) {
+      reqsSql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(reqTypeFilter) {
+      if(reqTypeFilter === "Retragere") {
+        reqsSql += ` AND hotel_requests.request_type = 0 `; 
+      } else if(reqTypeFilter === "Depozitare hotel Dinamic 92") {
+        reqsSql += ` AND hotel_requests.request_type = 1 `; 
+      } else if(reqTypeFilter === "Depozitare hotel propriu") {
+        reqsSql += ` AND hotel_requests.request_type = 2 `; 
+      }    
+    }
+    if(reqStatusFilter) {
+      if(reqStatusFilter === "In asteptare") {
+        reqsSql += ` AND hotel_requests.request_status = 0 `; 
+      } else if(reqStatusFilter === "Aprobata") {
+        reqsSql += ` AND hotel_requests.request_status = 1 `; 
+      } else if(reqStatusFilter === "Procesata") {
+        reqsSql += ` AND hotel_requests.request_status = 2 `; 
+      }    
+    }
+    reqsSql += ` ORDER BY hotel_requests.request_status ASC, hotel_requests.created DESC `;
+    reqsSql += ` LIMIT ${limitOffset} , ${limit} `;
+    let res = await this._query(reqsSql, queryParams);  
     
     return res;
   }
 
-  getPartnerRequests = async uId => {
+  countPartnerRequest = async (uId, searchString, reqTypeFilter, reqStatusFilter) => {
+    let pInfoSql = `SELECT pi_id FROM partner_info WHERE user_id = ?`;
+    let pInfo = await this._query(pInfoSql, [uId]);  
+    if(!pInfo || pInfo.length < 1) {
+      return 0;
+    } 
+    let queryParams = [pInfo[0].pi_id];
+    let reqsSql = `SELECT COUNT(hotel_requests.hr_id) AS reqsCount 
+                  FROM  hotel_requests 
+                  LEFT JOIN vehicles ON hotel_requests.vehicle_id = vehicles.v_id 
+                  WHERE hotel_requests.partner_id = ?  `;
+                        
+    if(searchString) {
+      reqsSql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(reqTypeFilter) {
+      if(reqTypeFilter === "Retragere") {
+        reqsSql += ` AND hotel_requests.request_type = 0 `; 
+      } else if(reqTypeFilter === "Depozitare hotel Dinamic 92") {
+        reqsSql += ` AND hotel_requests.request_type = 1 `; 
+      } else if(reqTypeFilter === "Depozitare hotel propriu") {
+        reqsSql += ` AND hotel_requests.request_type = 2 `; 
+      }    
+    }
+    if(reqStatusFilter) {
+      if(reqStatusFilter === "In asteptare") {
+        reqsSql += ` AND hotel_requests.request_status = 0 `; 
+      } else if(reqStatusFilter === "Aprobata") {
+        reqsSql += ` AND hotel_requests.request_status = 1 `; 
+      } else if(reqStatusFilter === "Procesata") {
+        reqsSql += ` AND hotel_requests.request_status = 2 `; 
+      }    
+    }    
+    let res = await this._query(reqsSql, queryParams);
+    return parseInt(res[0]?.reqsCount);
+  }
+
+  getPartnerRequests = async (uId, currentPage, pageLimit, searchString, reqTypeFilter, reqStatusFilter) => {
     let pInfoSql = `SELECT pi_id FROM partner_info WHERE user_id = ?`;
     let pInfo = await this._query(pInfoSql, [uId]);  
     if(!pInfo || pInfo.length < 1) {
       return null;
     } 
+    let queryParams = [pInfo[0].pi_id];
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    
     let reqsSql = `SELECT hotel_requests.hr_id, vehicles.reg_number, 
                   case 
                     when hotel_requests.request_type = 0 then "Retragere"
@@ -83,10 +186,33 @@ class DBHotelRequestModel {
                   hotel_requests.created 
                   FROM  hotel_requests 
                   LEFT JOIN vehicles ON hotel_requests.vehicle_id = vehicles.v_id 
-                  WHERE hotel_requests.partner_id = ?
-                  ORDER BY hotel_requests.request_status ASC, hotel_requests.created DESC
+                  WHERE hotel_requests.partner_id = ? 
                   `;  
-    let res = await this._query(reqsSql, [pInfo[0].pi_id]);      
+    if(searchString) {
+      reqsSql += ` AND vehicles.reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(reqTypeFilter) {
+      if(reqTypeFilter === "Retragere") {
+        reqsSql += ` AND hotel_requests.request_type = 0 `; 
+      } else if(reqTypeFilter === "Depozitare hotel Dinamic 92") {
+        reqsSql += ` AND hotel_requests.request_type = 1 `; 
+      } else if(reqTypeFilter === "Depozitare hotel propriu") {
+        reqsSql += ` AND hotel_requests.request_type = 2 `; 
+      }    
+    }
+    if(reqStatusFilter) {
+      if(reqStatusFilter === "In asteptare") {
+        reqsSql += ` AND hotel_requests.request_status = 0 `; 
+      } else if(reqStatusFilter === "Aprobata") {
+        reqsSql += ` AND hotel_requests.request_status = 1 `; 
+      } else if(reqStatusFilter === "Procesata") {
+        reqsSql += ` AND hotel_requests.request_status = 2 `; 
+      }    
+    }
+    reqsSql += ` ORDER BY hotel_requests.request_status ASC, hotel_requests.created DESC `;
+    reqsSql += ` LIMIT ${limitOffset} , ${limit} `;              
+    let res = await this._query(reqsSql, queryParams);      
     return res;
   }
 

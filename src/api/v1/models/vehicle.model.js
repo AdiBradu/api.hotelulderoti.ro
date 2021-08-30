@@ -45,6 +45,79 @@ class DBVehicleModel {
     
     return result[0];
   } 
+  
+  countFleetVehicles = async (fId, searchString, vehicleTypeFilter) => {
+    let queryParams = [fId];
+    let sql = `SELECT COUNT(v_id) AS vehicleCount FROM ${this.tableName} `;
+    sql += ` WHERE fleet_id = ? `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.vehicleCount);
+  }
+
+  getFleetVehicles = async (fId, currentPage, pageLimit, searchString, vehicleTypeFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [fId];
+
+    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName} `;
+    sql += ` WHERE fleet_id = ? `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql, queryParams);
+  }
+
+  countFleetHotelVehicles  = async (fId, searchString, vehicleTypeFilter) => {
+    let queryParams = [fId];
+    let sql = `SELECT COUNT(v_id) AS vehicleCount FROM ${this.tableName} `;
+    sql += ` WHERE fleet_id = ? AND v_id IN (SELECT vehicle_id FROM hotel_tires WHERE fleet_id = vehicles.fleet_id) `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    let res = await this._query(sql, queryParams);
+    return parseInt(res[0]?.vehicleCount);
+  }
+
+  getFleetHotelVehicles = async (fId, currentPage, pageLimit, searchString, vehicleTypeFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [fId];
+
+    let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName} `;
+    sql += ` WHERE fleet_id = ? AND v_id IN (SELECT vehicle_id FROM hotel_tires WHERE fleet_id = vehicles.fleet_id) `;
+    if(searchString) {
+      sql += ` AND reg_number LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(vehicleTypeFilter) {
+      sql += ` AND vehicle_type = ? `; 
+      queryParams.push(vehicleTypeFilter); 
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql, queryParams);
+  }
+  
 
   findFleetHotelVehicles = async fId => {
     let sql = `SELECT v_id, reg_number, vehicle_milage, vehicle_type FROM ${this.tableName} `;

@@ -141,8 +141,37 @@ class DBFleetInfoModel {
     
   }
 
+  countAllFleets = async (searchString, regionFilter, healthScoreFilter) => {
+    let sql = `SELECT COUNT(DISTINCT(${this.tableName}.fi_id)) AS fleetCount , COUNT(tires.t_id) AS fleetTiresCount 
+               FROM ${this.tableName}  
+               LEFT JOIN tires ON ${this.tableName}.fi_id = tires.fleet_id  
+               WHERE 1 `;
+    let queryParams = [];
+    if(searchString) {
+      sql += ` AND fleet_info.fleet_name LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(regionFilter) {
+      sql += ` AND fleet_info.fleet_region = ? `; 
+      queryParams.push(regionFilter); 
+    }
+    if(healthScoreFilter || healthScoreFilter === 0 || healthScoreFilter === "0") {
+      if(healthScoreFilter === 0 || healthScoreFilter === "0") {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) IS NULL  `;
+      } else {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) = ? `;        
+        queryParams.push(parseInt(healthScoreFilter));  
+      }
+    }
+    let resFCount = await this._query(sql, queryParams);
+    return parseInt(resFCount[0]?.fleetCount);
+  }
 
-  getAllFleets = async () => {
+  getAllFleets = async (currentPage, pageLimit, searchString, regionFilter, healthScoreFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [];
     let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
@@ -150,14 +179,65 @@ class DBFleetInfoModel {
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires
 
-      FROM ${this.tableName}`;
-   
-    return await this._query(sql);
+      FROM ${this.tableName}       
+      WHERE 1 
+      `;
+    if(searchString) {
+      sql += ` AND fleet_info.fleet_name LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(regionFilter) {
+      sql += ` AND fleet_info.fleet_region = ? `; 
+      queryParams.push(regionFilter); 
+    }
+    if(healthScoreFilter || healthScoreFilter === 0 || healthScoreFilter === "0") {
+      if(healthScoreFilter === 0 || healthScoreFilter === "0") {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) IS NULL  `;
+      } else {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) = ? `;        
+        queryParams.push(parseInt(healthScoreFilter));  
+      }
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    
+    return await this._query(sql, queryParams);
     
   }
 
+  countAgentFleets = async (agentId, searchString, regionFilter, healthScoreFilter) => {
+    let queryParams = [agentId];
+    let sql = `SELECT COUNT(DISTINCT(${this.tableName}.fi_id)) AS fleetCount , COUNT(tires.t_id) AS fleetTiresCount 
+              FROM ${this.tableName}
+              LEFT JOIN sales_agent_fleet_assignment ON ${this.tableName}.fi_id = sales_agent_fleet_assignment.fleet_id     
+              LEFT JOIN tires ON ${this.tableName}.fi_id = tires.fleet_id         
+              WHERE sales_agent_fleet_assignment.sales_agent_id = ? AND sales_agent_fleet_assignment.active = 1 
+     `;
+    if(searchString) {
+      sql += ` AND fleet_info.fleet_name LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(regionFilter) {
+      sql += ` AND fleet_info.fleet_region = ? `; 
+      queryParams.push(regionFilter); 
+    }
+    if(healthScoreFilter || healthScoreFilter === 0 || healthScoreFilter === "0") {
+      if(healthScoreFilter === 0 || healthScoreFilter === "0") {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) IS NULL  `;
+      } else {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) = ? `;        
+        queryParams.push(parseInt(healthScoreFilter));  
+      }
+    }
+    
+    let resFCount = await this._query(sql, queryParams);
+    return resFCount[0];//parseInt(resFCount[0]?.fleetCount);
+  }
 
-  getAgentFleets = async (agentId) => {
+  getAgentFleets = async (agentId, currentPage, pageLimit, searchString, regionFilter, healthScoreFilter) => {
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [agentId];
     let sql = `SELECT ${this.tableName}.fi_id, ${this.tableName}.fleet_name, ${this.tableName}.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
@@ -167,14 +247,37 @@ class DBFleetInfoModel {
 
       FROM ${this.tableName}
       LEFT JOIN sales_agent_fleet_assignment ON ${this.tableName}.fi_id = sales_agent_fleet_assignment.fleet_id
-      WHERE sales_agent_fleet_assignment.sales_agent_id = ? AND sales_agent_fleet_assignment.active = 1
+      WHERE sales_agent_fleet_assignment.sales_agent_id = ? AND sales_agent_fleet_assignment.active = 1 
+    
       `;
-   
-    return await this._query(sql, [agentId]);
+    if(searchString) {
+      sql += ` AND fleet_info.fleet_name LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(regionFilter) {
+      sql += ` AND fleet_info.fleet_region = ? `; 
+      queryParams.push(regionFilter); 
+    }
+    if(healthScoreFilter || healthScoreFilter === 0 || healthScoreFilter === "0") {
+      if(healthScoreFilter === 0 || healthScoreFilter === "0") {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) IS NULL  `;
+      } else {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) = ? `;        
+        queryParams.push(parseInt(healthScoreFilter));  
+      }
+    }
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    
+    return await this._query(sql, queryParams);
     
   }
 
-  getAllHotelFleets = async () => {
+  getAllHotelFleets = async (currentPage, pageLimit, searchString, regionFilter, healthScoreFilter) => {
+
+    let page = parseInt(currentPage);
+    let limit = parseInt(pageLimit);
+    let limitOffset = page * limit;   
+    let queryParams = [];
     let sql = `SELECT fleet_info.fi_id, fleet_info.fleet_name, fleet_info.fleet_region, 
       (SELECT COUNT(v_id) FROM vehicles WHERE fleet_id = fleet_info.fi_id) AS vehiclesCount, 
       (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id) AS tiresCount,
@@ -182,9 +285,26 @@ class DBFleetInfoModel {
       (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) AS mediumUsageTires,
       (SELECT COUNT(ht_id) FROM hotel_tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) AS noUsageTires
 
-      FROM ${this.tableName}`;
-   
-    return await this._query(sql);
+      FROM ${this.tableName} 
+      WHERE 1  `;
+    if(searchString) {
+      sql += ` AND fleet_info.fleet_name LIKE ? `;
+      queryParams.push(`%`+searchString+`%`);
+    }  
+    if(regionFilter) {
+      sql += ` AND fleet_info.fleet_region = ? `; 
+      queryParams.push(regionFilter); 
+    }
+    if(healthScoreFilter || healthScoreFilter === 0 || healthScoreFilter === "0") {
+      if(healthScoreFilter === 0 || healthScoreFilter === "0") {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) IS NULL  `;
+      } else {
+        sql += ` AND CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) = ? `;        
+        queryParams.push(parseInt(healthScoreFilter));  
+      }
+    }  
+    sql += ` LIMIT ${limitOffset} , ${limit} `;
+    return await this._query(sql, queryParams);
     
   }
 
@@ -193,6 +313,13 @@ class DBFleetInfoModel {
     return await this._query(sql);
   }
 
+  getDistinctFleetsHealthScores = async () => {
+    let sql = `SELECT DISTINCT( CEIL(((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) <= 3) * 1 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND ((12 - tire_tread_wear) > 3 AND (12 - tire_tread_wear) < 5)) * 2 + (SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id AND (12 - tire_tread_wear) > 5) * 3) / ((SELECT COUNT(t_id) FROM tires WHERE fleet_id = fleet_info.fi_id) * 3) * 100) ) AS healthScore  
+    
+    FROM ${this.tableName} `;
+
+    return await this._query(sql);
+  }
 
   checkFleetWriteAccess = async (id, userId, userRole) => {
     let hasAccess = false;

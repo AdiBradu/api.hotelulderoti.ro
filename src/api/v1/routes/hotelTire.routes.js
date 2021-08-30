@@ -14,6 +14,7 @@ router.get('/getVehiclesTiresInfo', auth(Role.Admin, Role.SalesAgent, Role.Fleet
 router.get('/getHotelsList', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getHotelsList));
 router.get('/getVehiclesWithTires', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getVehiclesWithTires));
 router.get('/getAllHotelVehicles', auth(Role.Admin, Role.SalesAgent, Role.HotelManager), awaitHandlerFactory(hotelTireController.getAllHotelVehicles));
+router.get('/hotelVehiclesToExcel', auth(Role.Admin, Role.SalesAgent, Role.HotelManager, Role.FleetUser, Role.Partner), awaitHandlerFactory(hotelTireController.hotelVehiclesToExcel));
 router.get('/getFleetHotelVehicles', auth(Role.FleetUser), awaitHandlerFactory(hotelTireController.getFleetHotelVehicles));
 router.get('/getPartnerHotelVehicles', auth(Role.Partner), awaitHandlerFactory(hotelTireController.getPartnerHotelVehicles));
 router.get('/getHotelByVehicle', auth(Role.Admin, Role.SalesAgent, Role.HotelManager, Role.FleetUser), awaitHandlerFactory(hotelTireController.getHotelByVehicle));
